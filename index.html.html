@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>EYL 評価システム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --teal: #028090; --teal-light: #E1F5EE; --teal-mid: #5DCAA5;
+  --purple: #534AB7; --purple-light: #EEEDFE;
+  --amber: #BA7517; --amber-light: #FAEEDA;
+  --coral: #D85A30; --coral-light: #FAECE7;
+  --gray: #5F5E5A; --gray-light: #F1EFE8; --gray-mid: #D3D1C7;
+  --white: #FFFFFF; --bg: #F8F8F6; --dark: #2C2C2A;
+  --text: #2C2C2A; --text-sub: #5F5E5A; --border: #D3D1C7;
+  --radius: 10px; --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+
+/* Layout */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header { background: var(--teal); color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.header h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.02em; }
+.header-sub { font-size: 11px; opacity: 0.8; }
+.nav { display: flex; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
+.nav-btn { flex: 1; min-width: 80px; padding: 12px 8px; text-align: center; font-size: 12px; color: var(--text-sub); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+.nav-btn.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
+.content { flex: 1; overflow-y: auto; padding: 16px; }
+
+/* Cards */
+.card { background: white; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+.card-header { padding: 12px 16px; border-bottom: 1px solid var(--gray-light); display: flex; align-items: center; justify-content: space-between; }
+.card-header h2 { font-size: 14px; font-weight: 600; }
+.card-body { padding: 14px 16px; }
+
+/* Section labels */
+.section-label { font-size: 11px; font-weight: 600; color: var(--teal); text-transform: uppercase; letter-spacing: 0.08em; margin: 20px 0 10px; }
+.section-label:first-child { margin-top: 0; }
+
+/* Form elements */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 5px; }
+.field input, .field textarea, .field select {
+  width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 16px; background: white; color: var(--text); -webkit-appearance: none;
+}
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--teal); }
+.field textarea { resize: vertical; min-height: 80px; }
+
+/* Assessment grid */
+.assess-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.assess-item { background: var(--gray-light); border-radius: var(--radius-sm); padding: 12px; }
+.assess-item label { font-size: 11px; color: var(--text-sub); display: block; margin-bottom: 6px; line-height: 1.4; }
+.assess-item .assess-name { font-size: 12px; font-weight: 600; color: var(--dark); margin-bottom: 4px; }
+.assess-item input { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; width: 100%; font-size: 18px; font-weight: 600; text-align: center; }
+.assess-item .unit { font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 4px; }
+.assess-item.basic { border-left: 3px solid var(--teal); }
+.assess-item.adv { border-left: 3px solid var(--purple); }
+.assess-item.opt { border-left: 3px solid var(--gray); }
+
+/* Buttons */
+.btn { padding: 13px 22px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-secondary { background: var(--gray-light); color: var(--dark); margin-top: 8px; }
+.btn-amber { background: var(--amber); color: white; margin-top: 8px; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn { flex: 1; }
+
+/* Patient list */
+.patient-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--gray-light); cursor: pointer; }
+.patient-item:last-child { border-bottom: none; }
+.patient-item:active { background: var(--teal-light); }
+.patient-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--teal-light); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--teal); margin-right: 14px; flex-shrink: 0; }
+.patient-info { flex: 1; }
+.patient-name { font-size: 15px; font-weight: 600; }
+.patient-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+.patient-arrow { color: var(--gray-mid); font-size: 18px; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+.badge-teal { background: var(--teal-light); color: var(--teal); }
+.badge-amber { background: var(--amber-light); color: var(--amber); }
+
+/* Chart area */
+.chart-wrap { position: relative; height: 240px; }
+.chart-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.chart-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); background: white; cursor: pointer; }
+.chart-pill.active { background: var(--teal); color: white; border-color: var(--teal); }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-box { background: var(--teal-light); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.stat-box .stat-val { font-size: 22px; font-weight: 700; color: var(--teal); }
+.stat-box .stat-label { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+.stat-box .stat-change { font-size: 12px; font-weight: 600; color: #1D9E75; }
+
+/* Video list */
+.video-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--gray-light); gap: 12px; }
+.video-thumb { width: 60px; height: 44px; background: var(--dark); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; }
+.video-info { flex: 1; }
+.video-title { font-size: 13px; font-weight: 600; }
+.video-meta { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+/* Report */
+.report-section { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px; }
+.report-section h3 { font-size: 13px; font-weight: 600; color: var(--teal); margin-bottom: 10px; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.report-table th { background: var(--teal-light); color: var(--teal); padding: 8px 10px; text-align: left; font-size: 11px; }
+.report-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-light); }
+.report-table .change-pos { color: #1D9E75; font-weight: 600; }
+.report-table .change-neg { color: var(--coral); font-weight: 600; }
+
+/* Tabs within page */
+.tab-row { display: flex; gap: 6px; margin-bottom: 14px; }
+.tab { padding: 8px 16px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border); cursor: pointer; background: white; }
+.tab.active { background: var(--teal); color: white; border-color: var(--teal); }
+
+/* EYL aggregate */
+.agg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.agg-card { background: var(--purple-light); border-radius: var(--radius-sm); padding: 14px; }
+.agg-card .agg-val { font-size: 26px; font-weight: 700; color: var(--purple); }
+.agg-card .agg-label { font-size: 11px; color: var(--text-sub); margin-top: 3px; }
+
+/* FAB */
+.fab { position: fixed; bottom: 24px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--teal); color: white; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 16px rgba(2,128,144,0.35); display: flex; align-items: center; justify-content: center; }
+
+/* Modal */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; }
+.modal-bg.open { display: flex; }
+.modal { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px; }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--dark); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 200; display: none; }
+.toast.show { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-sub">脳卒中専門リハビリスタジオ</div>
+    <h1>EYL 評価システム</h1>
+  </div>
+  <div style="font-size:22px; opacity:0.9">⚕️</div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('patients')">利用者</button>
+  <button class="nav-btn" onclick="showPage('assess')">評価入力</button>
+  <button class="nav-btn" onclick="showPage('graph')">グラフ</button>
+  <button class="nav-btn" onclick="showPage('video')">動画</button>
+  <button class="nav-btn" onclick="showPage('report')">レポート</button>
+  <button class="nav-btn" onclick="showPage('aggregate')">EYL集計</button>
+</div>
+
+<!-- Content -->
+<div class="content" id="main-content">
+
+<!-- ===== PAGE: 利用者一覧 ===== -->
+<div id="page-patients">
+  <div class="section-label">利用者一覧</div>
+  <div class="card">
+    <div class="patient-item" onclick="selectPatient('田中 義雄')">
+      <div class="patient-avatar">田</div>
+      <div class="patient-info">
+        <div class="patient-name">田中 義雄 <span class="badge badge-teal">上肢主訴</span></div>
+        <div class="patient-meta">68歳・男性　発症後 2年4ヶ月　最終評価: 2024/12/20</div>
+      </div>
+      <div class="patient-arrow">›</div>
+    </div>
+    <div class="patient-item" onclick="selectPatient('山田 花子')">
+      <div class="patient-avatar">山</div>
+      <div class="patient-info">
+        <div class="patient-name">山田 花子 <span class="badge badge-amber">歩行主訴</span></div>
+        <div class="patient-meta">72歳・女性　発症後 1年1ヶ月　最終評価: 2025/01/05</div>
+      </div>
+      <div class="patient-arrow">›</div>
+    </div>
+    <div class="patient-item" onclick="selectPatient('鈴木 一郎')">
+      <div class="patient-avatar">鈴</div>
+      <div class="patient-info">
+        <div class="patient-name">鈴木 一郎 <span class="badge badge-teal">上肢主訴</span></div>
+        <div class="patient-meta">61歳・男性　発症後 3年7ヶ月　最終評価: 2024/11/30</div>
+      </div>
+      <div class="patient-arrow">›</div>
+    </div>
+  </div>
+  <button class="btn btn-secondary" onclick="openModal('modal-new-patient')">＋ 新規利用者を登録</button>
+</div>
+
+<!-- ===== PAGE: 評価入力 ===== -->
+<div id="page-assess" style="display:none">
+  <div style="background:var(--teal-light); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--teal); font-weight:600;">
+    現在の利用者：<span id="current-patient-name">田中 義雄</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>評価日</h2></div>
+    <div class="card-body">
+      <div class="field">
+        <label>評価実施日</label>
+        <input type="date" id="eval-date" value="2025-03-23">
+      </div>
+      <div class="field">
+        <label>評価の種類</label>
+        <select>
+          <option>初回評価</option>
+          <option>3ヶ月定期評価</option>
+          <option>随時評価</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ベーシック -->
+  <div class="section-label">ベーシックプラン（全例）</div>
+  <div class="card">
+    <div class="card-body">
+      <div style="font-size:12px; color:var(--text-sub); margin-bottom:12px;">歩行・バランス</div>
+      <div class="assess-grid">
+        <div class="assess-item basic">
+          <div class="assess-name">10MWT（快適）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">秒 / 10m</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">10MWT（最大）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">秒 / 10m</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">TUG</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">秒</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">FRT</div>
+          <input type="number" step="0.5" placeholder="—">
+          <div class="unit">cm</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">5×STS</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">秒</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-sub); margin: 14px 0 12px;">体幹・上下肢</div>
+      <div class="assess-grid">
+        <div class="assess-item basic">
+          <div class="assess-name">FACT</div>
+          <input type="number" min="0" max="28" placeholder="—">
+          <div class="unit">点 / 28点</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">FMA-UE</div>
+          <input type="number" min="0" max="66" placeholder="—">
+          <div class="unit">点 / 66点</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">FMA-LE</div>
+          <input type="number" min="0" max="34" placeholder="—">
+          <div class="unit">点 / 34点</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-sub); margin: 14px 0 12px;">身体組成</div>
+      <div class="assess-grid">
+        <div class="assess-item basic">
+          <div class="assess-name">握力（健側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">kg</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">握力（患側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">kg</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">上腕周計（健側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">cm</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">上腕周計（患側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">cm</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">大腿周計（健側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">cm</div>
+        </div>
+        <div class="assess-item basic">
+          <div class="assess-name">大腿周計（患側）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">cm</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- アドバンス -->
+  <div class="section-label">アドバンス（上肢主訴・学会発表）</div>
+  <div class="card">
+    <div class="card-body">
+      <div class="assess-grid">
+        <div class="assess-item adv">
+          <div class="assess-name">WMFT（FAS平均）</div>
+          <input type="number" step="0.1" min="0" max="5" placeholder="—">
+          <div class="unit">点 / 5点</div>
+        </div>
+        <div class="assess-item adv">
+          <div class="assess-name">WMFT（時間平均）</div>
+          <input type="number" step="0.1" placeholder="—">
+          <div class="unit">秒</div>
+        </div>
+        <div class="assess-item adv">
+          <div class="assess-name">MAL-AOU</div>
+          <input type="number" step="0.1" min="0" max="5" placeholder="—">
+          <div class="unit">点 / 5点</div>
+        </div>
+        <div class="assess-item adv">
+          <div class="assess-name">MAL-QOM</div>
+          <input type="number" step="0.1" min="0" max="5" placeholder="—">
+          <div class="unit">点 / 5点</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- オプション -->
+  <div class="section-label">必要時オプション</div>
+  <div class="card">
+    <div class="card-body">
+      <div class="assess-grid">
+        <div class="assess-item opt">
+          <div class="assess-name">MAS（上肢）</div>
+          <input type="number" step="0.5" min="0" max="4" placeholder="—">
+          <div class="unit">点 / 4点</div>
+        </div>
+        <div class="assess-item opt">
+          <div class="assess-name">MAS（下肢）</div>
+          <input type="number" step="0.5" min="0" max="4" placeholder="—">
+          <div class="unit">点 / 4点</div>
+        </div>
+        <div class="assess-item opt">
+          <div class="assess-name">ROM 肩屈曲（患）</div>
+          <input type="number" placeholder="—">
+          <div class="unit">°</div>
+        </div>
+        <div class="assess-item opt">
+          <div class="assess-name">ROM 足背屈（患）</div>
+          <input type="number" placeholder="—">
+          <div class="unit">°</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>セラピストコメント（介入内容・特記事項）</label>
+    <textarea placeholder="今回の評価で気づいた点、介入内容の変更、利用者の様子など…"></textarea>
+  </div>
+
+  <button class="btn btn-primary" onclick="saveAssessment()">評価を保存する</button>
+  <button class="btn btn-secondary">下書き保存</button>
+</div>
+
+<!-- ===== PAGE: グラフ ===== -->
+<div id="page-graph" style="display:none">
+  <div style="background:var(--teal-light); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--teal); font-weight:600;">
+    田中 義雄　の推移グラフ
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val">12.4</div>
+      <div class="stat-label">TUG（秒）現在</div>
+      <div class="stat-change">▼ 4.2秒改善</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">52</div>
+      <div class="stat-label">FMA-UE 現在</div>
+      <div class="stat-change">▲ 9点改善</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">21</div>
+      <div class="stat-label">FACT 現在</div>
+      <div class="stat-change">▲ 5点改善</div>
+    </div>
+  </div>
+
+  <div class="chart-controls">
+    <div class="chart-pill active" onclick="switchChart('tug', this)">TUG</div>
+    <div class="chart-pill" onclick="switchChart('10mwt', this)">10MWT</div>
+    <div class="chart-pill" onclick="switchChart('frt', this)">FRT</div>
+    <div class="chart-pill" onclick="switchChart('5sts', this)">5×STS</div>
+    <div class="chart-pill" onclick="switchChart('fact', this)">FACT</div>
+    <div class="chart-pill" onclick="switchChart('fmaue', this)">FMA-UE</div>
+    <div class="chart-pill" onclick="switchChart('fmale', this)">FMA-LE</div>
+    <div class="chart-pill" onclick="switchChart('grip', this)">握力</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 id="chart-title">TUG（秒）の推移</h2>
+      <span style="font-size:12px; color:var(--text-sub)">低いほど良好</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-amber" onclick="exportCSV()">CSVダウンロード</button>
+</div>
+
+<!-- ===== PAGE: 動画 ===== -->
+<div id="page-video" style="display:none">
+  <div style="background:var(--teal-light); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--teal); font-weight:600;">
+    田中 義雄　の動画記録
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>保存済み動画</h2></div>
+    <div class="card-body">
+      <div class="video-item">
+        <div class="video-thumb">▶</div>
+        <div class="video-info">
+          <div class="video-title">歩行評価（10MWT）</div>
+          <div class="video-meta">2025/03/20　初回評価時</div>
+        </div>
+      </div>
+      <div class="video-item">
+        <div class="video-thumb">▶</div>
+        <div class="video-info">
+          <div class="video-title">上肢動作（WMFT セッション）</div>
+          <div class="video-meta">2024/12/20　3ヶ月評価</div>
+        </div>
+      </div>
+      <div class="video-item">
+        <div class="video-thumb">▶</div>
+        <div class="video-info">
+          <div class="video-title">歩行評価（初回）</div>
+          <div class="video-meta">2024/09/10　初回評価時</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>動画を追加</h2></div>
+    <div class="card-body">
+      <div class="field">
+        <label>動画の種類</label>
+        <select>
+          <option>歩行評価（10MWT）</option>
+          <option>TUG</option>
+          <option>上肢動作評価（WMFT）</option>
+          <option>立ち上がり（5×STS）</option>
+          <option>自由歩行</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>撮影日</label>
+        <input type="date" value="2025-03-23">
+      </div>
+      <div class="field">
+        <label>動画URL（Google Drive / iCloudリンク）</label>
+        <input type="url" placeholder="https://drive.google.com/...">
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <input type="text" placeholder="例：杖なし・裸足・室内廊下">
+      </div>
+      <button class="btn btn-primary">動画リンクを保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: Dr.レポート ===== -->
+<div id="page-report" style="display:none">
+  <div style="background:var(--teal-light); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--teal); font-weight:600;">
+    Dr.報告書　田中 義雄 様
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>報告期間の設定</h2></div>
+    <div class="card-body">
+      <div class="field">
+        <label>比較する評価日（Before）</label>
+        <select>
+          <option>2024/09/10（初回評価）</option>
+          <option>2024/12/20（3ヶ月評価）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>比較する評価日（After）</label>
+        <select>
+          <option>2025/03/20（3ヶ月評価）</option>
+          <option>2024/12/20（3ヶ月評価）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="report-section">
+        <h3>評価結果（ビフォー・アフター）</h3>
+        <table class="report-table">
+          <tr><th>評価項目</th><th>初回</th><th>最新</th><th>変化</th></tr>
+          <tr><td>TUG（秒）</td><td>16.6</td><td>12.4</td><td class="change-pos">▼ 4.2</td></tr>
+          <tr><td>10MWT 快適（秒）</td><td>18.2</td><td>14.1</td><td class="change-pos">▼ 4.1</td></tr>
+          <tr><td>10MWT 最大（秒）</td><td>14.0</td><td>10.8</td><td class="change-pos">▼ 3.2</td></tr>
+          <tr><td>FRT（cm）</td><td>12.0</td><td>17.5</td><td class="change-pos">▲ 5.5</td></tr>
+          <tr><td>5×STS（秒）</td><td>24.8</td><td>19.2</td><td class="change-pos">▼ 5.6</td></tr>
+          <tr><td>FACT（点）</td><td>16</td><td>21</td><td class="change-pos">▲ 5</td></tr>
+          <tr><td>FMA-UE（点）</td><td>43</td><td>52</td><td class="change-pos">▲ 9</td></tr>
+          <tr><td>FMA-LE（点）</td><td>22</td><td>26</td><td class="change-pos">▲ 4</td></tr>
+          <tr><td>握力 患側（kg）</td><td>8.2</td><td>11.4</td><td class="change-pos">▲ 3.2</td></tr>
+        </table>
+      </div>
+
+      <div class="report-section">
+        <h3>担当セラピストコメント・所見</h3>
+        <textarea style="width:100%; border:1px solid var(--border); border-radius:6px; padding:12px; font-size:14px; min-height:120px; resize:vertical;" placeholder="介入内容の概要、機能改善の背景、今後の方針など…">本利用者は介入開始より6ヶ月が経過しました。姿勢制御を基盤とした介入により、体幹機能（FACT）および上肢運動機能（FMA-UE）に有意な改善が認められます。歩行速度についても10MWT快適速度が18.2秒→14.1秒と改善し、実用的な歩行能力の向上が確認できます。今後は引き続き上肢機能の向上と、日常生活での自発的な麻痺側使用促進を目標に介入を継続する予定です。</textarea>
+      </div>
+
+      <div class="report-section">
+        <h3>基本情報</h3>
+        <table class="report-table">
+          <tr><td>氏名</td><td>田中 義雄</td></tr>
+          <tr><td>生年月日</td><td>1956年4月12日（68歳）</td></tr>
+          <tr><td>診断名</td><td>脳梗塞（左中大脳動脈領域）</td></tr>
+          <tr><td>発症日</td><td>2022年11月</td></tr>
+          <tr><td>麻痺側</td><td>右片麻痺</td></tr>
+          <tr><td>報告書作成日</td><td>2025年3月23日</td></tr>
+          <tr><td>担当PT</td><td>水上 俊樹</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="showToast('PDF生成中... （実装時はPDF出力されます）')">PDF出力</button>
+    <button class="btn btn-amber" onclick="exportCSV()">CSV出力</button>
+  </div>
+</div>
+
+<!-- ===== PAGE: EYL集計 ===== -->
+<div id="page-aggregate" style="display:none">
+  <div class="section-label">EYL スタジオ全体データ</div>
+
+  <div class="agg-grid" style="margin-bottom:14px;">
+    <div class="agg-card">
+      <div class="agg-val">3</div>
+      <div class="agg-label">総利用者数</div>
+    </div>
+    <div class="agg-card">
+      <div class="agg-val">8</div>
+      <div class="agg-label">総評価件数</div>
+    </div>
+    <div class="agg-card">
+      <div class="agg-val">▼3.8秒</div>
+      <div class="agg-label">TUG 平均改善</div>
+    </div>
+    <div class="agg-card">
+      <div class="agg-val">▲7.2点</div>
+      <div class="agg-label">FMA-UE 平均改善</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>指標別 平均改善量</h2></div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="aggChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>主訴別分布</h2></div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:180px;">
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-amber" style="margin-top:4px;" onclick="exportCSV()">全データCSV出力</button>
+</div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- Modal: 新規利用者 -->
+<div class="modal-bg" id="modal-new-patient" onclick="closeModal(event, 'modal-new-patient')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>新規利用者を登録</h2>
+    <div class="field"><label>氏名</label><input type="text" placeholder="山田 太郎"></div>
+    <div class="field"><label>生年月日</label><input type="date"></div>
+    <div class="field"><label>性別</label><select><option>男性</option><option>女性</option></select></div>
+    <div class="field"><label>診断名</label><input type="text" placeholder="脳梗塞（右中大脳動脈領域）"></div>
+    <div class="field"><label>発症日</label><input type="month"></div>
+    <div class="field"><label>麻痺側</label><select><option>右片麻痺</option><option>左片麻痺</option><option>両側</option></select></div>
+    <div class="field"><label>主訴</label><select><option>上肢麻痺</option><option>歩行障害</option><option>上肢＋歩行</option></select></div>
+    <div class="field"><label>主治医・病院名</label><input type="text" placeholder="〇〇病院 〇〇先生"></div>
+    <button class="btn btn-primary" onclick="closeModal(null,'modal-new-patient'); showToast('利用者を登録しました')">登録する</button>
+    <button class="btn btn-secondary" onclick="closeModal(null,'modal-new-patient')">キャンセル</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Navigation ──
+function showPage(id) {
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+  document.getElementById('page-' + id).style.display = 'block';
+  document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.remove('active'));
+  const map = ['patients','assess','graph','video','report','aggregate'];
+  const idx = map.indexOf(id);
+  if (idx >= 0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if (id === 'graph') initCharts();
+  if (id === 'aggregate') initAggCharts();
+}
+
+function selectPatient(name) {
+  document.getElementById('current-patient-name').textContent = name;
+  showPage('assess');
+}
+
+// ── Modal ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(e, id) {
+  if (!e || e.target.classList.contains('modal-bg')) document.getElementById(id).classList.remove('open');
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Save assessment ──
+function saveAssessment() { showToast('評価データを保存しました'); }
+
+// ── CSV export ──
+function exportCSV() {
+  const data = [
+    ['氏名','評価日','TUG','10MWT快適','10MWT最大','FRT','5×STS','FACT','FMA-UE','FMA-LE','握力（患）','握力（健）'],
+    ['田中 義雄','2024/09/10','16.6','18.2','14.0','12.0','24.8','16','43','22','8.2','22.1'],
+    ['田中 義雄','2024/12/20','14.8','16.0','12.2','14.5','21.3','19','48','24','9.8','22.4'],
+    ['田中 義雄','2025/03/20','12.4','14.1','10.8','17.5','19.2','21','52','26','11.4','22.6'],
+  ];
+  const csv = data.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'EYL_評価データ.csv'; a.click();
+  showToast('CSVをダウンロードしました');
+}
+
+// ── Charts ──
+let mainChartInstance = null;
+const chartData = {
+  labels: ['初回\n9/10', '3ヶ月\n12/20', '6ヶ月\n3/20'],
+  tug:   { data: [16.6, 14.8, 12.4], label: 'TUG（秒）', color: '#028090', lower: true },
+  '10mwt': { data: [18.2, 16.0, 14.1], label: '10MWT 快適（秒）', color: '#5DCAA5', lower: true },
+  frt:   { data: [12.0, 14.5, 17.5], label: 'FRT（cm）', color: '#BA7517', lower: false },
+  '5sts': { data: [24.8, 21.3, 19.2], label: '5×STS（秒）', color: '#D85A30', lower: true },
+  fact:  { data: [16, 19, 21], label: 'FACT（点）', color: '#534AB7', lower: false },
+  fmaue: { data: [43, 48, 52], label: 'FMA-UE（点）', color: '#7F77DD', lower: false },
+  fmale: { data: [22, 24, 26], label: 'FMA-LE（点）', color: '#AFA9EC', lower: false },
+  grip:  { data: [8.2, 9.8, 11.4], label: '握力 患側（kg）', color: '#1D9E75', lower: false },
+};
+
+function initCharts() {
+  if (mainChartInstance) return;
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const d = chartData['tug'];
+  mainChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.labels,
+      datasets: [{
+        label: d.label, data: d.data, borderColor: d.color,
+        backgroundColor: d.color + '18', tension: 0.3, pointRadius: 6,
+        pointBackgroundColor: d.color, fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#F1EFE8' }, ticks: { font: { size: 12 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function switchChart(key, el) {
+  document.querySelectorAll('.chart-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const d = chartData[key];
+  document.getElementById('chart-title').textContent = d.label + ' の推移';
+  if (!mainChartInstance) { initCharts(); return; }
+  mainChartInstance.data.datasets[0].data = d.data;
+  mainChartInstance.data.datasets[0].label = d.label;
+  mainChartInstance.data.datasets[0].borderColor = d.color;
+  mainChartInstance.data.datasets[0].backgroundColor = d.color + '18';
+  mainChartInstance.data.datasets[0].pointBackgroundColor = d.color;
+  mainChartInstance.update();
+}
+
+function initAggCharts() {
+  if (document.getElementById('aggChart').getAttribute('data-init')) return;
+  document.getElementById('aggChart').setAttribute('data-init', '1');
+
+  new Chart(document.getElementById('aggChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['TUG', '10MWT', 'FRT', '5×STS', 'FACT', 'FMA-UE', 'FMA-LE', '握力'],
+      datasets: [{
+        label: '平均改善量',
+        data: [3.8, 3.6, 4.8, 4.9, 4.2, 7.2, 3.1, 2.8],
+        backgroundColor: '#5DCAA518', borderColor: '#028090', borderWidth: 2, borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { grid: { color: '#F1EFE8' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  new Chart(document.getElementById('pieChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['上肢主訴', '歩行主訴', '上肢＋歩行'],
+      datasets: [{ data: [2, 1, 1], backgroundColor: ['#7F77DD', '#5DCAA5', '#EF9F27'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 16 } } }
+    }
+  });
+}
+</script>
+</body>
+</html>
