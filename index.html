@@ -6,286 +6,349 @@
 <title>EYL 評価システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ── 変数 ── */
-:root {
-  --teal:#028090; --teal-l:#E1F5EE; --teal-m:#5DCAA5;
-  --purple:#534AB7; --purple-l:#EEEDFE; --purple-m:#AFA9EC;
-  --amber:#BA7517; --amber-l:#FAEEDA;
-  --coral:#D85A30; --coral-l:#FAECE7;
+:root{
+  --teal:#028090;--teal-l:#E1F5EE;--teal-m:#5DCAA5;
+  --purple:#534AB7;--purple-l:#EEEDFE;--purple-m:#AFA9EC;
+  --amber:#BA7517;--amber-l:#FAEEDA;
+  --coral:#D85A30;--coral-l:#FAECE7;
   --green:#1D9E75;
-  --gray:#5F5E5A; --gray-l:#F1EFE8; --gray-m:#D3D1C7;
-  --white:#FFFFFF; --bg:#F8F8F6; --dark:#2C2C2A;
-  --text:#2C2C2A; --sub:#5F5E5A; --border:#D3D1C7;
-  --r:10px; --rs:6px;
+  --gray:#5F5E5A;--gray-l:#F1EFE8;--gray-m:#D3D1C7;
+  --white:#fff;--bg:#F8F8F6;--dark:#2C2C2A;
+  --text:#2C2C2A;--sub:#5F5E5A;--border:#D3D1C7;
+  --r:10px;--rs:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
-
-/* ── レイアウト ── */
 .app{display:flex;flex-direction:column;height:100vh}
-.header{background:var(--teal);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.header h1{font-size:18px;font-weight:600}
-.header-sub{font-size:11px;opacity:.8}
+.hdr{background:var(--teal);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr h1{font-size:17px;font-weight:600}
+.hdr-sub{font-size:10px;opacity:.8}
 .nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{flex:1;min-width:72px;padding:12px 6px;text-align:center;font-size:12px;color:var(--sub);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-.nav-btn.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
-.content{flex:1;overflow-y:auto;padding:16px}
+.nb{flex:1;min-width:66px;padding:11px 4px;text-align:center;font-size:11px;color:var(--sub);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.nb.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+.content{flex:1;overflow-y:auto;padding:14px}
 .page{display:none}.page.active{display:block}
 
-/* ── カード ── */
-.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
-.card-header{padding:12px 16px;border-bottom:1px solid var(--gray-l);display:flex;align-items:center;justify-content:space-between}
-.card-header h2{font-size:14px;font-weight:600}
-.card-body{padding:14px 16px}
+/* cards */
+.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.ch{padding:11px 15px;border-bottom:1px solid var(--gray-l);display:flex;align-items:center;justify-content:space-between}
+.ch h2{font-size:13px;font-weight:600}
+.cb{padding:13px 15px}
 
-/* ── セクションラベル ── */
-.slabel{font-size:11px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 10px}
-.slabel:first-child{margin-top:0}
+/* labels */
+.sl{font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+.sl:first-child{margin-top:0}
 
-/* ── フォーム ── */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12px;color:var(--sub);margin-bottom:5px}
-.field input,.field textarea,.field select{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:16px;background:#fff;color:var(--text);-webkit-appearance:none}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--teal)}
-.field textarea{resize:vertical;min-height:80px}
+/* form */
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:11px;color:var(--sub);margin-bottom:4px}
+.fld input,.fld textarea,.fld select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;background:#fff;color:var(--text);-webkit-appearance:none}
+.fld input:focus,.fld textarea:focus{outline:none;border-color:var(--teal)}
+.fld textarea{resize:vertical;min-height:72px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
 
-/* ── 評価グリッド ── */
-.ag{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ai{background:var(--gray-l);border-radius:var(--rs);padding:11px}
+/* assessment items */
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ai{background:var(--gray-l);border-radius:var(--rs);padding:10px}
 .ai.basic{border-left:3px solid var(--teal)}
 .ai.adv{border-left:3px solid var(--purple)}
 .ai.opt{border-left:3px solid var(--gray)}
-.ai-name{font-size:11px;font-weight:600;color:var(--dark);margin-bottom:4px}
-.ai input{background:#fff;border:1px solid var(--border);border-radius:5px;padding:9px;width:100%;font-size:18px;font-weight:600;text-align:center}
-.ai-unit{font-size:10px;color:var(--sub);text-align:center;margin-top:3px}
+.ai-nm{font-size:10px;font-weight:600;color:var(--dark);margin-bottom:3px}
+.ai input{background:#fff;border:1px solid var(--border);border-radius:5px;padding:8px;width:100%;font-size:17px;font-weight:600;text-align:center}
+.ai-u{font-size:9px;color:var(--sub);text-align:center;margin-top:2px}
+.ai-avg{font-size:10px;color:var(--teal);text-align:center;margin-top:3px;font-weight:600;min-height:14px}
 
-/* ── ボタン ── */
-.btn{padding:13px 20px;border-radius:var(--rs);border:none;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:8px}
+/* dual input for 2 trials */
+.dual{display:flex;gap:5px;align-items:center}
+.dual input{flex:1;font-size:15px}
+.dual-sep{font-size:11px;color:var(--sub);flex-shrink:0}
+
+/* buttons */
+.btn{padding:12px 18px;border-radius:var(--rs);border:none;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:7px}
 .btn:first-child{margin-top:0}
 .btn-p{background:var(--teal);color:#fff}
 .btn-s{background:var(--gray-l);color:var(--dark)}
 .btn-a{background:var(--amber);color:#fff}
 .btn-r{background:#c0392b;color:#fff}
-.btn-row{display:flex;gap:10px}
-.btn-row .btn{flex:1}
+.btn-row{display:flex;gap:9px}
+.btn-row .btn{flex:1;margin-top:0}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:4px 8px;color:var(--sub)}
 
-/* ── 利用者リスト ── */
-.pt-item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--gray-l);cursor:pointer}
+/* patient list */
+.pt-item{display:flex;align-items:center;padding:13px 15px;border-bottom:1px solid var(--gray-l);cursor:pointer}
 .pt-item:last-child{border-bottom:none}
 .pt-item:active{background:var(--teal-l)}
-.pt-av{width:42px;height:42px;border-radius:50%;background:var(--teal-l);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--teal);margin-right:14px;flex-shrink:0}
-.pt-info{flex:1}
-.pt-name{font-size:15px;font-weight:600}
-.pt-meta{font-size:12px;color:var(--sub);margin-top:2px}
-.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px}
+.pt-av{width:40px;height:40px;border-radius:50%;background:var(--teal-l);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--teal);margin-right:12px;flex-shrink:0}
+.pt-nm{font-size:14px;font-weight:600}
+.pt-meta{font-size:11px;color:var(--sub);margin-top:1px}
+.badge{display:inline-block;font-size:9px;padding:2px 7px;border-radius:9px;margin-left:5px}
 .badge-t{background:var(--teal-l);color:var(--teal)}
 .badge-a{background:var(--amber-l);color:var(--amber)}
-.empty-msg{text-align:center;padding:40px 20px;color:var(--sub);font-size:14px}
+.empty-msg{text-align:center;padding:36px 16px;color:var(--sub);font-size:13px;line-height:1.8}
 
-/* ── グラフ ── */
-.chart-wrap{position:relative;height:230px}
-.cpills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
-.cpill{padding:6px 13px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:#fff;cursor:pointer}
+/* info bar */
+.ibar{background:var(--teal-l);border-radius:var(--rs);padding:9px 13px;margin-bottom:12px;font-size:12px;color:var(--teal);font-weight:600}
+
+/* stats */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.sbox{background:var(--teal-l);border-radius:var(--rs);padding:11px;text-align:center}
+.sbox .sv{font-size:19px;font-weight:700;color:var(--teal)}
+.sbox .sl2{font-size:9px;color:var(--sub);margin-top:1px}
+.sbox .sc{font-size:11px;font-weight:600}
+
+/* chart */
+.chart-wrap{position:relative;height:220px}
+.cpills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.cpill{padding:5px 12px;border-radius:18px;font-size:11px;border:1px solid var(--border);background:#fff;cursor:pointer}
 .cpill.active{background:var(--teal);color:#fff;border-color:var(--teal)}
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.sbox{background:var(--teal-l);border-radius:var(--rs);padding:12px;text-align:center}
-.sbox .sv{font-size:20px;font-weight:700;color:var(--teal)}
-.sbox .sl{font-size:10px;color:var(--sub);margin-top:2px}
-.sbox .sc{font-size:12px;font-weight:600;color:var(--green)}
 
-/* ── レポートテーブル ── */
-.rtable{width:100%;border-collapse:collapse;font-size:13px}
-.rtable th{background:var(--teal-l);color:var(--teal);padding:8px 10px;text-align:left;font-size:11px;font-weight:600}
-.rtable td{padding:8px 10px;border-bottom:1px solid var(--gray-l);vertical-align:middle}
-.rtable tr:last-child td{border-bottom:none}
+/* eval history */
+.ev-item{padding:11px 0;border-bottom:1px solid var(--gray-l)}
+.ev-item:last-child{border-bottom:none}
+.ev-date{font-size:13px;font-weight:600;color:var(--dark)}
+.ev-type{font-size:11px;color:var(--sub);margin-left:8px}
+.ev-vals{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ev-val{font-size:10px;background:var(--gray-l);padding:3px 8px;border-radius:12px}
+.ev-comment{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.6;font-style:italic}
+
+/* report table */
+.rtable{width:100%;border-collapse:collapse;font-size:12px}
+.rtable th{background:var(--teal-l);color:var(--teal);padding:7px 9px;text-align:left;font-size:10px;font-weight:600}
+.rtable td{padding:7px 9px;border-bottom:1px solid var(--gray-l)}
 .chg-p{color:var(--green);font-weight:600}
 .chg-n{color:var(--coral);font-weight:600}
 .chg-0{color:var(--sub)}
 
-/* ── EYL集計 ── */
-.agg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.agg-card{background:var(--purple-l);border-radius:var(--rs);padding:14px}
-.agg-val{font-size:24px;font-weight:700;color:var(--purple)}
-.agg-label{font-size:11px;color:var(--sub);margin-top:3px}
+/* agg */
+.agg-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.agg-card{background:var(--purple-l);border-radius:var(--rs);padding:13px}
+.agg-val{font-size:22px;font-weight:700;color:var(--purple)}
+.agg-label{font-size:10px;color:var(--sub);margin-top:2px}
 
-/* ── モーダル ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px}
-.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
-.modal h2{font-size:17px;font-weight:700;margin-bottom:16px}
+/* video */
+.vi{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid var(--gray-l);gap:10px}
+.vi:last-child{border-bottom:none}
+.vt{width:54px;height:40px;background:var(--dark);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.vi-info{flex:1}
+.vi-title{font-size:12px;font-weight:600}
+.vi-meta{font-size:10px;color:var(--sub);margin-top:1px}
 
-/* ── トースト ── */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+/* modal */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end}
+.mbg.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:18px}
+.mhandle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:14px}
+
+/* toast */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:9px 20px;border-radius:18px;font-size:12px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
 
-/* ── ハイライト帯 ── */
-.info-bar{background:var(--teal-l);border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--teal);font-weight:600}
+/* saved reports */
+.rpt-saved-item{padding:11px 0;border-bottom:1px solid var(--gray-l);cursor:pointer}
+.rpt-saved-item:last-child{border-bottom:none}
+.rpt-saved-item:active{background:var(--teal-l)}
 
-/* ── 動画 ── */
-.vi{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-l);gap:12px}
-.vi:last-child{border-bottom:none}
-.vthumb{width:58px;height:42px;background:var(--dark);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
-.vi-info{flex:1}
-.vi-title{font-size:13px;font-weight:600}
-.vi-meta{font-size:11px;color:var(--sub);margin-top:2px}
-.vi-del{color:var(--coral);font-size:20px;padding:4px 8px;cursor:pointer}
-
-/* ══════════════════════════════════
-   印刷 / PDF用スタイル
-══════════════════════════════════ */
-@media print {
-  .app { height:auto !important }
-  .header,.nav,.content > *:not(#page-report) { display:none !important }
-  #page-report { display:block !important }
-  .no-print { display:none !important }
-  body { background:#fff; font-size:12px }
-
-  .pr-wrap { padding:0; max-width:100% }
-  .pr-header { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #028090; padding-bottom:12px; margin-bottom:16px }
-  .pr-logo { font-size:18px; font-weight:700; color:#028090 }
-  .pr-logo span { font-size:11px; display:block; color:#5F5E5A; font-weight:400 }
-  .pr-date { font-size:11px; color:#5F5E5A; text-align:right }
-
-  .pr-section { margin-bottom:16px; page-break-inside:avoid }
-  .pr-section h3 { font-size:12px; font-weight:700; color:#028090; border-left:3px solid #028090; padding-left:8px; margin-bottom:8px }
-
-  .pr-table { width:100%; border-collapse:collapse; font-size:11px }
-  .pr-table th { background:#E1F5EE; color:#028090; padding:6px 8px; text-align:left; border:1px solid #D3D1C7 }
-  .pr-table td { padding:6px 8px; border:1px solid #D3D1C7 }
-  .pr-table tr:nth-child(even) td { background:#F8F8F6 }
-
-  .pr-comment { border:1px solid #D3D1C7; border-radius:6px; padding:12px; font-size:11px; line-height:1.7; min-height:80px; white-space:pre-wrap }
-  .pr-footer { margin-top:24px; border-top:1px solid #D3D1C7; padding-top:8px; font-size:10px; color:#5F5E5A; display:flex; justify-content:space-between }
-
-  .chg-p { color:#1D9E75; font-weight:700 }
-  .chg-n { color:#D85A30; font-weight:700 }
+/* ── 印刷 ── */
+@media print{
+  .app{height:auto!important}
+  .hdr,.nav,.content>*:not(#page-report){display:none!important}
+  #page-report{display:block!important}
+  .no-print{display:none!important}
+  body{background:#fff;font-size:11px}
+  .pr-wrap{padding:0}
+  .pr-hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #028090;padding-bottom:10px;margin-bottom:14px}
+  .pr-logo{font-size:16px;font-weight:700;color:#028090}
+  .pr-logo span{font-size:10px;display:block;color:#5F5E5A;font-weight:400;margin-top:2px}
+  .pr-date{font-size:10px;color:#5F5E5A;text-align:right}
+  .pr-sec{margin-bottom:14px;page-break-inside:avoid}
+  .pr-sec h3{font-size:11px;font-weight:700;color:#028090;border-left:3px solid #028090;padding-left:7px;margin-bottom:7px}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:10px}
+  .pr-tbl th{background:#E1F5EE;color:#028090;padding:5px 7px;text-align:left;border:1px solid #D3D1C7}
+  .pr-tbl td{padding:5px 7px;border:1px solid #D3D1C7}
+  .pr-tbl tr:nth-child(even) td{background:#F8F8F6}
+  .pr-comment{border:1px solid #D3D1C7;border-radius:5px;padding:10px;font-size:10px;line-height:1.7;min-height:70px;white-space:pre-wrap}
+  .pr-goal{border:1px solid #9FE1CB;border-radius:5px;padding:10px;font-size:10px;line-height:1.7;background:#E1F5EE}
+  .pr-foot{margin-top:20px;border-top:1px solid #D3D1C7;padding-top:7px;font-size:9px;color:#5F5E5A;display:flex;justify-content:space-between}
+  .chg-p{color:#1D9E75;font-weight:700}
+  .chg-n{color:#D85A30;font-weight:700}
 }
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- ヘッダー -->
-<div class="header">
-  <div>
-    <div class="header-sub">脳卒中専門リハビリスタジオ</div>
-    <h1>EYL 評価システム</h1>
-  </div>
-  <div style="font-size:22px;opacity:.9">⚕</div>
+<div class="hdr">
+  <div><div class="hdr-sub">脳卒中専門リハビリスタジオ</div><h1>EYL 評価システム</h1></div>
+  <div style="font-size:20px;opacity:.9">⚕</div>
 </div>
 
-<!-- ナビ -->
-<div class="nav" id="main-nav">
-  <button class="nav-btn active" onclick="showPage('patients')">利用者</button>
-  <button class="nav-btn" onclick="showPage('assess')">評価入力</button>
-  <button class="nav-btn" onclick="showPage('graph')">グラフ</button>
-  <button class="nav-btn" onclick="showPage('video')">動画</button>
-  <button class="nav-btn" onclick="showPage('report')">レポート</button>
-  <button class="nav-btn" onclick="showPage('aggregate')">EYL集計</button>
+<div class="nav">
+  <button class="nb active" onclick="showPage('patients')">利用者</button>
+  <button class="nb" onclick="showPage('assess')">評価入力</button>
+  <button class="nb" onclick="showPage('history')">記録</button>
+  <button class="nb" onclick="showPage('graph')">グラフ</button>
+  <button class="nb" onclick="showPage('video')">動画</button>
+  <button class="nb" onclick="showPage('report')">レポート</button>
+  <button class="nb" onclick="showPage('aggregate')">EYL集計</button>
 </div>
 
 <div class="content">
 
 <!-- ══ 利用者一覧 ══ -->
 <div id="page-patients" class="page active">
-  <div class="slabel">利用者一覧</div>
-  <div class="card" id="patient-list-card">
-    <div id="patient-list"><div class="empty-msg">利用者が登録されていません<br>下のボタンから追加してください</div></div>
-  </div>
+  <div class="sl">利用者一覧</div>
+  <div class="card" id="pt-list-card"><div id="pt-list"><div class="empty-msg">利用者が登録されていません<br>下のボタンから追加してください</div></div></div>
   <button class="btn btn-p" onclick="openModal('modal-new-pt')">＋ 新規利用者を登録</button>
 </div>
 
 <!-- ══ 評価入力 ══ -->
 <div id="page-assess" class="page">
-  <div class="info-bar">評価対象：<span id="assess-pt-name" style="font-size:15px">—</span>
-    <span id="assess-pt-meta" style="font-weight:400;font-size:11px;margin-left:8px"></span>
-  </div>
+  <div class="ibar">評価対象：<span id="assess-nm">—</span><span id="assess-sub" style="font-weight:400;font-size:10px;margin-left:7px"></span></div>
 
-  <div class="card">
-    <div class="card-header"><h2>評価日・種類</h2></div>
-    <div class="card-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field" style="margin:0"><label>評価日</label><input type="date" id="ev-date"></div>
-        <div class="field" style="margin:0"><label>種類</label>
-          <select id="ev-type">
-            <option>初回評価</option><option>3ヶ月定期評価</option><option>随時評価</option>
-          </select>
-        </div>
+  <div class="card"><div class="ch"><h2>評価日・種類・歩行補助具</h2></div><div class="cb">
+    <div class="g2">
+      <div class="fld" style="margin:0"><label>評価日</label><input type="date" id="ev-date"></div>
+      <div class="fld" style="margin:0"><label>種類</label>
+        <select id="ev-type"><option>初回評価</option><option>3ヶ月定期評価</option><option>随時評価</option></select>
       </div>
     </div>
-  </div>
-
-  <div class="slabel">ベーシックプラン（全例）</div>
-  <div class="card"><div class="card-body">
-    <div style="font-size:11px;color:var(--sub);margin-bottom:10px;font-weight:600">歩行・バランス</div>
-    <div class="ag">
-      <div class="ai basic"><div class="ai-name">10MWT 快適</div><input type="number" step="0.1" id="v-10mwt-c" placeholder="—"><div class="ai-unit">秒 / 10m</div></div>
-      <div class="ai basic"><div class="ai-name">10MWT 最大</div><input type="number" step="0.1" id="v-10mwt-m" placeholder="—"><div class="ai-unit">秒 / 10m</div></div>
-      <div class="ai basic"><div class="ai-name">TUG</div><input type="number" step="0.1" id="v-tug" placeholder="—"><div class="ai-unit">秒</div></div>
-      <div class="ai basic"><div class="ai-name">FRT</div><input type="number" step="0.5" id="v-frt" placeholder="—"><div class="ai-unit">cm</div></div>
-      <div class="ai basic"><div class="ai-name">5×STS</div><input type="number" step="0.1" id="v-5sts" placeholder="—"><div class="ai-unit">秒</div></div>
-    </div>
-    <div style="font-size:11px;color:var(--sub);margin:14px 0 10px;font-weight:600">体幹・上下肢</div>
-    <div class="ag">
-      <div class="ai basic"><div class="ai-name">FACT</div><input type="number" min="0" max="28" id="v-fact" placeholder="—"><div class="ai-unit">点 / 28</div></div>
-      <div class="ai basic"><div class="ai-name">FMA-UE</div><input type="number" min="0" max="66" id="v-fmaue" placeholder="—"><div class="ai-unit">点 / 66</div></div>
-      <div class="ai basic"><div class="ai-name">FMA-LE</div><input type="number" min="0" max="34" id="v-fmale" placeholder="—"><div class="ai-unit">点 / 34</div></div>
-    </div>
-    <div style="font-size:11px;color:var(--sub);margin:14px 0 10px;font-weight:600">身体組成</div>
-    <div class="ag">
-      <div class="ai basic"><div class="ai-name">握力 健側</div><input type="number" step="0.1" id="v-grip-h" placeholder="—"><div class="ai-unit">kg</div></div>
-      <div class="ai basic"><div class="ai-name">握力 患側</div><input type="number" step="0.1" id="v-grip-a" placeholder="—"><div class="ai-unit">kg</div></div>
-      <div class="ai basic"><div class="ai-name">上腕周計 健</div><input type="number" step="0.1" id="v-arm-h" placeholder="—"><div class="ai-unit">cm</div></div>
-      <div class="ai basic"><div class="ai-name">上腕周計 患</div><input type="number" step="0.1" id="v-arm-a" placeholder="—"><div class="ai-unit">cm</div></div>
-      <div class="ai basic"><div class="ai-name">大腿周計 健</div><input type="number" step="0.1" id="v-thigh-h" placeholder="—"><div class="ai-unit">cm</div></div>
-      <div class="ai basic"><div class="ai-name">大腿周計 患</div><input type="number" step="0.1" id="v-thigh-a" placeholder="—"><div class="ai-unit">cm</div></div>
+    <div class="g2" style="margin-top:9px">
+      <div class="fld" style="margin:0"><label>装具</label>
+        <select id="ev-orthosis">
+          <option>なし</option><option>短下肢装具（既製品）</option><option>短下肢装具（カスタム）</option>
+          <option>長下肢装具</option><option>膝装具</option><option>その他</option>
+        </select>
+      </div>
+      <div class="fld" style="margin:0"><label>歩行補助具</label>
+        <select id="ev-aid">
+          <option>なし</option><option>T字杖</option><option>四点杖</option>
+          <option>歩行器</option><option>ロフストランド杖</option><option>その他</option>
+        </select>
+      </div>
     </div>
   </div></div>
 
-  <div class="slabel">アドバンス（上肢主訴・学会発表）</div>
-  <div class="card"><div class="card-body">
+  <!-- ベーシック：歩行・バランス（2回計測） -->
+  <div class="sl">ベーシックプラン ― 歩行・バランス（各2回計測・平均値を保存）</div>
+  <div class="card"><div class="cb">
+    <!-- TUG 右回り・左回り各2回 -->
+    <div style="font-size:10px;color:var(--sub);font-weight:600;margin-bottom:7px">TUG（秒）― 右回り・左回りそれぞれ2回</div>
+    <div class="ag" style="grid-template-columns:1fr 1fr">
+      <div class="ai basic">
+        <div class="ai-nm">TUG 右回り</div>
+        <div class="dual"><input type="number" step="0.1" id="v-tug-r1" placeholder="1回目" oninput="calcAvg('tug-r')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-tug-r2" placeholder="2回目" oninput="calcAvg('tug-r')"></div>
+        <div class="ai-avg" id="avg-tug-r"></div>
+        <div class="ai-u">平均値を保存</div>
+      </div>
+      <div class="ai basic">
+        <div class="ai-nm">TUG 左回り</div>
+        <div class="dual"><input type="number" step="0.1" id="v-tug-l1" placeholder="1回目" oninput="calcAvg('tug-l')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-tug-l2" placeholder="2回目" oninput="calcAvg('tug-l')"></div>
+        <div class="ai-avg" id="avg-tug-l"></div>
+        <div class="ai-u">平均値を保存</div>
+      </div>
+    </div>
+
+    <div style="font-size:10px;color:var(--sub);font-weight:600;margin:12px 0 7px">10m歩行テスト（秒）― 2回計測</div>
     <div class="ag">
-      <div class="ai adv"><div class="ai-name">WMFT FAS平均</div><input type="number" step="0.1" min="0" max="5" id="v-wmft-fas" placeholder="—"><div class="ai-unit">点 / 5</div></div>
-      <div class="ai adv"><div class="ai-name">WMFT 時間平均</div><input type="number" step="0.1" id="v-wmft-t" placeholder="—"><div class="ai-unit">秒</div></div>
-      <div class="ai adv"><div class="ai-name">MAL-AOU</div><input type="number" step="0.1" min="0" max="5" id="v-mal-aou" placeholder="—"><div class="ai-unit">点 / 5</div></div>
-      <div class="ai adv"><div class="ai-name">MAL-QOM</div><input type="number" step="0.1" min="0" max="5" id="v-mal-qom" placeholder="—"><div class="ai-unit">点 / 5</div></div>
+      <div class="ai basic">
+        <div class="ai-nm">10MWT 快適</div>
+        <div class="dual"><input type="number" step="0.1" id="v-10c1" placeholder="1回目" oninput="calcAvg('10c')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-10c2" placeholder="2回目" oninput="calcAvg('10c')"></div>
+        <div class="ai-avg" id="avg-10c"></div>
+        <div class="ai-u">秒 / 平均値を保存</div>
+      </div>
+      <div class="ai basic">
+        <div class="ai-nm">10MWT 最大</div>
+        <div class="dual"><input type="number" step="0.1" id="v-10m1" placeholder="1回目" oninput="calcAvg('10m')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-10m2" placeholder="2回目" oninput="calcAvg('10m')"></div>
+        <div class="ai-avg" id="avg-10m"></div>
+        <div class="ai-u">秒 / 平均値を保存</div>
+      </div>
+      <div class="ai basic">
+        <div class="ai-nm">FRT（cm）</div>
+        <div class="dual"><input type="number" step="0.5" id="v-frt1" placeholder="1回目" oninput="calcAvg('frt')"><div class="dual-sep">/</div><input type="number" step="0.5" id="v-frt2" placeholder="2回目" oninput="calcAvg('frt')"></div>
+        <div class="ai-avg" id="avg-frt"></div>
+        <div class="ai-u">cm / 平均値を保存</div>
+      </div>
+      <div class="ai basic">
+        <div class="ai-nm">5×STS（秒）</div>
+        <div class="dual"><input type="number" step="0.1" id="v-5sts1" placeholder="1回目" oninput="calcAvg('5sts')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-5sts2" placeholder="2回目" oninput="calcAvg('5sts')"></div>
+        <div class="ai-avg" id="avg-5sts"></div>
+        <div class="ai-u">秒 / 平均値を保存</div>
+      </div>
     </div>
   </div></div>
 
-  <div class="slabel">必要時オプション</div>
-  <div class="card"><div class="card-body">
+  <!-- 体幹・上下肢 -->
+  <div class="sl">ベーシックプラン ― 体幹・上下肢</div>
+  <div class="card"><div class="cb">
     <div class="ag">
-      <div class="ai opt"><div class="ai-name">MAS 上肢</div><input type="number" step="0.5" min="0" max="4" id="v-mas-u" placeholder="—"><div class="ai-unit">点 / 4</div></div>
-      <div class="ai opt"><div class="ai-name">MAS 下肢</div><input type="number" step="0.5" min="0" max="4" id="v-mas-l" placeholder="—"><div class="ai-unit">点 / 4</div></div>
-      <div class="ai opt"><div class="ai-name">ROM 肩屈曲</div><input type="number" id="v-rom-sh" placeholder="—"><div class="ai-unit">°</div></div>
-      <div class="ai opt"><div class="ai-name">ROM 足背屈</div><input type="number" id="v-rom-ank" placeholder="—"><div class="ai-unit">°</div></div>
+      <div class="ai basic"><div class="ai-nm">FACT</div><input type="number" min="0" max="28" id="v-fact" placeholder="—"><div class="ai-u">点 / 28</div></div>
+      <div class="ai basic"><div class="ai-nm">FMA-UE</div><input type="number" min="0" max="66" id="v-fmaue" placeholder="—"><div class="ai-u">点 / 66</div></div>
+      <div class="ai basic"><div class="ai-nm">FMA-LE</div><input type="number" min="0" max="34" id="v-fmale" placeholder="—"><div class="ai-u">点 / 34</div></div>
     </div>
   </div></div>
 
-  <div class="field">
-    <label>セラピストコメント（介入内容・特記事項）</label>
-    <textarea id="v-comment" placeholder="今回の評価で気づいた点、介入内容、利用者の様子など…" style="min-height:100px"></textarea>
-  </div>
+  <!-- 身体組成（右側・左側） -->
+  <div class="sl">ベーシックプラン ― 身体組成（右側 / 左側）</div>
+  <div class="card"><div class="cb">
+    <div class="ag">
+      <div class="ai basic"><div class="ai-nm">握力 右（kg）</div><input type="number" step="0.1" id="v-grip-r" placeholder="—"></div>
+      <div class="ai basic"><div class="ai-nm">握力 左（kg）</div><input type="number" step="0.1" id="v-grip-l" placeholder="—"></div>
+      <div class="ai basic"><div class="ai-nm">上腕周計 右（cm）</div><input type="number" step="0.1" id="v-arm-r" placeholder="—"></div>
+      <div class="ai basic"><div class="ai-nm">上腕周計 左（cm）</div><input type="number" step="0.1" id="v-arm-l" placeholder="—"></div>
+      <div class="ai basic"><div class="ai-nm">大腿周計 右（cm）</div><input type="number" step="0.1" id="v-thigh-r" placeholder="—"></div>
+      <div class="ai basic"><div class="ai-nm">大腿周計 左（cm）</div><input type="number" step="0.1" id="v-thigh-l" placeholder="—"></div>
+    </div>
+  </div></div>
 
+  <!-- アドバンス -->
+  <div class="sl">アドバンス（上肢主訴・学会発表）</div>
+  <div class="card"><div class="cb">
+    <div class="ag">
+      <div class="ai adv"><div class="ai-nm">WMFT FAS平均</div><input type="number" step="0.1" min="0" max="5" id="v-wmft-fas" placeholder="—"><div class="ai-u">点 / 5</div></div>
+      <div class="ai adv"><div class="ai-nm">WMFT 時間平均</div><input type="number" step="0.1" id="v-wmft-t" placeholder="—"><div class="ai-u">秒</div></div>
+      <div class="ai adv"><div class="ai-nm">MAL-AOU</div><input type="number" step="0.1" min="0" max="5" id="v-mal-aou" placeholder="—"><div class="ai-u">点 / 5</div></div>
+      <div class="ai adv"><div class="ai-nm">MAL-QOM</div><input type="number" step="0.1" min="0" max="5" id="v-mal-qom" placeholder="—"><div class="ai-u">点 / 5</div></div>
+    </div>
+  </div></div>
+
+  <!-- オプション -->
+  <div class="sl">必要時オプション</div>
+  <div class="card"><div class="cb">
+    <div class="ag">
+      <div class="ai opt"><div class="ai-nm">MAS 上肢</div><input type="number" step="0.5" min="0" max="4" id="v-mas-u" placeholder="—"><div class="ai-u">点 / 4</div></div>
+      <div class="ai opt"><div class="ai-nm">MAS 下肢</div><input type="number" step="0.5" min="0" max="4" id="v-mas-l" placeholder="—"><div class="ai-u">点 / 4</div></div>
+      <div class="ai opt"><div class="ai-nm">ROM 肩屈曲</div><input type="number" id="v-rom-sh" placeholder="—"><div class="ai-u">°</div></div>
+      <div class="ai opt"><div class="ai-nm">ROM 足背屈</div><input type="number" id="v-rom-ank" placeholder="—"><div class="ai-u">°</div></div>
+    </div>
+  </div></div>
+
+  <div class="fld"><label>セラピストコメント</label><textarea id="v-comment" placeholder="介入内容・特記事項・利用者の様子など…"></textarea></div>
   <button class="btn btn-p" onclick="saveAssessment()">評価を保存する</button>
-  <button class="btn btn-s" id="btn-del-eval" style="display:none;margin-top:8px" onclick="deleteLastEval()">この評価を削除</button>
+  <button class="btn btn-s" style="margin-top:7px" onclick="showPage('history')">記録・過去データを見る</button>
+</div>
+
+<!-- ══ 記録（数値＋コメント閲覧） ══ -->
+<div id="page-history" class="page">
+  <div class="ibar">記録：<span id="hist-nm">—</span></div>
+  <div class="card">
+    <div class="ch"><h2>評価履歴</h2></div>
+    <div class="cb" id="hist-list"><div class="empty-msg">評価データがありません</div></div>
+  </div>
 </div>
 
 <!-- ══ グラフ ══ -->
 <div id="page-graph" class="page">
-  <div class="info-bar">推移グラフ：<span id="graph-pt-name">—</span></div>
-  <div id="graph-no-data" style="display:none" class="empty-msg">評価データがありません</div>
+  <div class="ibar">推移グラフ：<span id="graph-nm">—</span></div>
+  <div id="graph-empty" style="display:none" class="empty-msg">評価データがありません</div>
   <div id="graph-content">
     <div class="stats-row" id="stats-row"></div>
-    <div class="cpills" id="chart-pills"></div>
+    <div class="cpills" id="cpills"></div>
     <div class="card">
-      <div class="card-header">
-        <h2 id="chart-title">—</h2>
-        <span id="chart-dir" style="font-size:11px;color:var(--sub)"></span>
-      </div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="mainChart"></canvas></div></div>
+      <div class="ch"><h2 id="chart-title">—</h2><span id="chart-dir" style="font-size:10px;color:var(--sub)"></span></div>
+      <div class="cb"><div class="chart-wrap"><canvas id="mainChart"></canvas></div></div>
     </div>
     <button class="btn btn-a" onclick="exportCSV()">CSVダウンロード</button>
   </div>
@@ -293,115 +356,73 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
 
 <!-- ══ 動画 ══ -->
 <div id="page-video" class="page">
-  <div class="info-bar">動画記録：<span id="video-pt-name">—</span></div>
-  <div class="card">
-    <div class="card-header"><h2>保存済み動画</h2></div>
-    <div class="card-body" id="video-list"><div class="empty-msg">動画がありません</div></div>
-  </div>
-  <div class="card">
-    <div class="card-header"><h2>動画を追加</h2></div>
-    <div class="card-body">
-      <div class="field"><label>種類</label>
-        <select id="vid-type">
-          <option>歩行評価（10MWT）</option><option>TUG</option>
-          <option>上肢動作（WMFT）</option><option>立ち上がり（5×STS）</option>
-          <option>自由歩行</option><option>その他</option>
-        </select>
-      </div>
-      <div class="field"><label>撮影日</label><input type="date" id="vid-date"></div>
-      <div class="field"><label>動画URL（Google Drive / iCloud）</label><input type="url" id="vid-url" placeholder="https://drive.google.com/..."></div>
-      <div class="field"><label>メモ</label><input type="text" id="vid-memo" placeholder="例：杖なし・裸足・室内廊下"></div>
-      <button class="btn btn-p" onclick="saveVideo()">動画リンクを保存</button>
+  <div class="ibar">動画記録：<span id="vid-nm">—</span></div>
+  <div class="card"><div class="ch"><h2>保存済み動画</h2></div><div class="cb" id="vid-list"><div class="empty-msg">動画がありません</div></div></div>
+  <div class="card"><div class="ch"><h2>動画を追加</h2></div><div class="cb">
+    <div class="fld"><label>種類</label>
+      <select id="vid-type"><option>歩行評価（10MWT）</option><option>TUG</option><option>上肢動作（WMFT）</option><option>立ち上がり（5×STS）</option><option>自由歩行</option><option>その他</option></select>
     </div>
-  </div>
+    <div class="fld"><label>撮影日</label><input type="date" id="vid-date"></div>
+    <div class="fld"><label>動画URL（Google Drive / iCloud）</label><input type="url" id="vid-url" placeholder="https://drive.google.com/..."></div>
+    <div class="fld"><label>メモ</label><input type="text" id="vid-memo" placeholder="例：T字杖使用・室内廊下"></div>
+    <button class="btn btn-p" onclick="saveVideo()">保存</button>
+  </div></div>
 </div>
 
 <!-- ══ Dr.レポート ══ -->
 <div id="page-report" class="page">
 
-  <!-- 印刷時に表示されるレポート本体 -->
-  <div class="pr-wrap" id="print-report">
-    <div class="pr-header">
-      <div class="pr-logo">脳卒中専門リハビリスタジオ EYL
-        <span>株式会社EYL / NPO法人EYL for smile　久留米市六ツ門</span>
-      </div>
+  <!-- 印刷本体 -->
+  <div id="print-report">
+    <div class="pr-hdr">
+      <div class="pr-logo">脳卒中専門リハビリスタジオ EYL<span>株式会社EYL / NPO法人EYL for smile　久留米市六ツ門</span></div>
       <div class="pr-date" id="pr-date-block"></div>
     </div>
-
-    <div class="pr-section">
-      <h3>利用者基本情報</h3>
-      <table class="pr-table" id="pr-basic-table"></table>
-    </div>
-
-    <div class="pr-section">
-      <h3>評価結果（ビフォー・アフター）</h3>
-      <table class="pr-table" id="pr-eval-table"></table>
-    </div>
-
-    <div class="pr-section">
-      <h3>担当セラピストコメント・所見</h3>
-      <div class="pr-comment" id="pr-comment-print"></div>
-    </div>
-
-    <div class="pr-footer">
-      <span>担当PT：水上 俊樹　/ 脳卒中専門リハビリスタジオEYL</span>
-      <span id="pr-footer-date"></span>
-    </div>
+    <div class="pr-sec"><h3>利用者基本情報</h3><table class="pr-tbl" id="pr-basic"></table></div>
+    <div class="pr-sec"><h3>現在の目標</h3><div class="pr-goal" id="pr-goal-print"></div></div>
+    <div class="pr-sec"><h3>評価結果（ビフォー・アフター）</h3><table class="pr-tbl" id="pr-eval"></table></div>
+    <div class="pr-sec"><h3>歩行補助具・装具</h3><div id="pr-aid-print" style="font-size:10px;line-height:1.8"></div></div>
+    <div class="pr-sec"><h3>セラピストコメント・所見</h3><div class="pr-comment" id="pr-comment-print"></div></div>
+    <div class="pr-foot"><span>担当PT：水上 俊樹　/ 脳卒中専門リハビリスタジオEYL</span><span id="pr-foot-date"></span></div>
   </div>
 
-  <!-- 画面表示用コントロール（印刷時は非表示） -->
+  <!-- 操作UI（印刷時非表示） -->
   <div class="no-print">
-    <div class="info-bar">Dr.報告書：<span id="report-pt-name">—</span></div>
+    <div class="ibar">Dr.報告書：<span id="rpt-nm">—</span></div>
 
-    <div class="card">
-      <div class="card-header"><h2>比較期間の設定</h2></div>
-      <div class="card-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="field" style="margin:0"><label>Before（比較元）</label>
-            <select id="rpt-before" onchange="renderReport()"></select></div>
-          <div class="field" style="margin:0"><label>After（最新）</label>
-            <select id="rpt-after" onchange="renderReport()"></select></div>
-        </div>
+    <div class="card"><div class="ch"><h2>比較期間</h2></div><div class="cb">
+      <div class="g2">
+        <div class="fld" style="margin:0"><label>Before</label><select id="rpt-before" onchange="renderReport()"></select></div>
+        <div class="fld" style="margin:0"><label>After</label><select id="rpt-after" onchange="renderReport()"></select></div>
       </div>
-    </div>
+    </div></div>
 
-    <div class="card">
-      <div class="card-header"><h2>評価結果プレビュー</h2></div>
-      <div class="card-body">
-        <div style="overflow-x:auto"><table class="rtable" id="rpt-preview-table"></table></div>
-      </div>
-    </div>
+    <div class="card"><div class="ch"><h2>評価結果プレビュー</h2></div><div class="cb">
+      <div style="overflow-x:auto"><table class="rtable" id="rpt-preview"></table></div>
+    </div></div>
 
-    <div class="card">
-      <div class="card-header"><h2>セラピストコメント</h2></div>
-      <div class="card-body">
-        <textarea id="rpt-comment" style="width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:12px;font-size:14px;min-height:130px;resize:vertical"
-          placeholder="介入内容の概要、機能改善の背景、今後の方針など…"></textarea>
-      </div>
-    </div>
+    <div class="card"><div class="ch"><h2>セラピストコメント</h2></div><div class="cb">
+      <textarea id="rpt-comment" style="width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:11px;font-size:14px;min-height:120px;resize:vertical" placeholder="介入内容の概要、機能改善の背景、今後の方針…"></textarea>
+    </div></div>
 
     <div class="btn-row">
-      <button class="btn btn-p" onclick="printReport()">PDF出力（印刷）</button>
+      <button class="btn btn-p" onclick="printReport()">PDF出力</button>
       <button class="btn btn-a" onclick="exportCSV()">CSV出力</button>
     </div>
-    <p style="font-size:11px;color:var(--sub);margin-top:8px;text-align:center">
-      iPadでは「印刷」→「PDFとして保存」を選択してください
-    </p>
+    <p style="font-size:10px;color:var(--sub);margin-top:7px;text-align:center">iPadでは「印刷」→「PDFとして保存」</p>
+
+    <div class="sl" style="margin-top:18px">保存済みレポート</div>
+    <div class="card"><div class="cb" id="saved-rpt-list"><div class="empty-msg">保存済みレポートがありません</div></div></div>
+    <button class="btn btn-s" onclick="saveReport()">このレポートを保存する</button>
   </div>
 </div>
 
 <!-- ══ EYL集計 ══ -->
 <div id="page-aggregate" class="page">
-  <div class="slabel">EYL スタジオ全体データ</div>
+  <div class="sl">EYL スタジオ全体データ</div>
   <div class="agg-grid" id="agg-stats"></div>
-  <div class="card">
-    <div class="card-header"><h2>指標別 平均改善量</h2></div>
-    <div class="card-body"><div class="chart-wrap" style="height:200px"><canvas id="aggChart"></canvas></div></div>
-  </div>
-  <div class="card">
-    <div class="card-header"><h2>主訴別分布</h2></div>
-    <div class="card-body"><div class="chart-wrap" style="height:180px"><canvas id="pieChart"></canvas></div></div>
-  </div>
+  <div class="card"><div class="ch"><h2>指標別 平均改善量</h2></div><div class="cb"><div class="chart-wrap" style="height:190px"><canvas id="aggChart"></canvas></div></div></div>
+  <div class="card"><div class="ch"><h2>主訴別分布</h2></div><div class="cb"><div class="chart-wrap" style="height:170px"><canvas id="pieChart"></canvas></div></div></div>
   <button class="btn btn-a" onclick="exportAllCSV()">全データCSV出力</button>
 </div>
 
@@ -409,24 +430,49 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
 </div><!-- /app -->
 
 <!-- モーダル：新規利用者 -->
-<div class="modal-bg" id="modal-new-pt" onclick="closeModal(event,'modal-new-pt')">
+<div class="mbg" id="modal-new-pt" onclick="closeModal(event,'modal-new-pt')">
   <div class="modal">
-    <div class="modal-handle"></div>
+    <div class="mhandle"></div>
     <h2>新規利用者を登録</h2>
-    <div class="field"><label>氏名</label><input type="text" id="np-name" placeholder="山田 太郎"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>生年月日</label><input type="date" id="np-dob"></div>
-      <div class="field"><label>性別</label><select id="np-sex"><option>男性</option><option>女性</option></select></div>
+    <div class="fld"><label>氏名</label><input type="text" id="np-name" placeholder="山田 太郎"></div>
+    <div class="g2">
+      <div class="fld"><label>生年月日</label><input type="date" id="np-dob"></div>
+      <div class="fld"><label>性別</label><select id="np-sex"><option>男性</option><option>女性</option></select></div>
     </div>
-    <div class="field"><label>診断名</label><input type="text" id="np-dx" placeholder="脳梗塞（右中大脳動脈領域）"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="field"><label>発症年月</label><input type="month" id="np-onset"></div>
-      <div class="field"><label>麻痺側</label><select id="np-side"><option>右片麻痺</option><option>左片麻痺</option><option>両側</option></select></div>
+    <div class="fld"><label>診断名</label><input type="text" id="np-dx" placeholder="脳梗塞（右中大脳動脈領域）"></div>
+    <div class="g2">
+      <div class="fld"><label>発症年月</label><input type="month" id="np-onset"></div>
+      <div class="fld"><label>麻痺側</label><select id="np-side"><option>右片麻痺</option><option>左片麻痺</option><option>両側</option></select></div>
     </div>
-    <div class="field"><label>主訴</label><select id="np-chief"><option>上肢麻痺</option><option>歩行障害</option><option>上肢＋歩行</option></select></div>
-    <div class="field"><label>主治医・病院名</label><input type="text" id="np-dr" placeholder="〇〇病院 〇〇先生"></div>
+    <div class="fld"><label>主訴</label><select id="np-chief"><option>上肢麻痺</option><option>歩行障害</option><option>上肢＋歩行</option></select></div>
+    <div class="fld"><label>主治医・病院名</label><input type="text" id="np-dr" placeholder="〇〇病院 〇〇先生"></div>
+    <div class="fld"><label>初期目標（3ヶ月）</label><textarea id="np-goal" placeholder="例：T字杖使用にて屋内歩行自立、患側上肢を食事動作に補助的に使用できる"></textarea></div>
     <button class="btn btn-p" onclick="saveNewPatient()">登録する</button>
     <button class="btn btn-s" onclick="closeModal(null,'modal-new-pt')">キャンセル</button>
+  </div>
+</div>
+
+<!-- モーダル：利用者編集 -->
+<div class="mbg" id="modal-edit-pt" onclick="closeModal(event,'modal-edit-pt')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>利用者情報の編集</h2>
+    <div class="fld"><label>氏名</label><input type="text" id="ep-name"></div>
+    <div class="g2">
+      <div class="fld"><label>生年月日</label><input type="date" id="ep-dob"></div>
+      <div class="fld"><label>性別</label><select id="ep-sex"><option>男性</option><option>女性</option></select></div>
+    </div>
+    <div class="fld"><label>診断名</label><input type="text" id="ep-dx"></div>
+    <div class="g2">
+      <div class="fld"><label>発症年月</label><input type="month" id="ep-onset"></div>
+      <div class="fld"><label>麻痺側</label><select id="ep-side"><option>右片麻痺</option><option>左片麻痺</option><option>両側</option></select></div>
+    </div>
+    <div class="fld"><label>主訴</label><select id="ep-chief"><option>上肢麻痺</option><option>歩行障害</option><option>上肢＋歩行</option></select></div>
+    <div class="fld"><label>主治医・病院名</label><input type="text" id="ep-dr"></div>
+    <div class="fld"><label>現在の目標（最新 / 3ヶ月ごとに更新）</label><textarea id="ep-goal"></textarea></div>
+    <button class="btn btn-p" onclick="updatePatient()">保存する</button>
+    <button class="btn btn-r" style="margin-top:7px" onclick="deletePatient()">この利用者を削除する</button>
+    <button class="btn btn-s" style="margin-top:7px" onclick="closeModal(null,'modal-edit-pt')">キャンセル</button>
   </div>
 </div>
 
@@ -434,461 +480,525 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
 
 <script>
 // ══════════════════════════════════════════════
-// データ層（localStorage）
+// DB（localStorage）
 // ══════════════════════════════════════════════
-const DB = {
-  getPatients(){ return JSON.parse(localStorage.getItem('eyl_patients')||'[]') },
-  savePatients(d){ localStorage.setItem('eyl_patients', JSON.stringify(d)) },
-  getEvals(ptId){ return JSON.parse(localStorage.getItem('eyl_evals_'+ptId)||'[]') },
-  saveEvals(ptId,d){ localStorage.setItem('eyl_evals_'+ptId, JSON.stringify(d)) },
-  getVideos(ptId){ return JSON.parse(localStorage.getItem('eyl_videos_'+ptId)||'[]') },
-  saveVideos(ptId,d){ localStorage.setItem('eyl_videos_'+ptId, JSON.stringify(d)) },
+const DB={
+  getPts(){return JSON.parse(localStorage.getItem('eyl_pts')||'[]')},
+  savePts(d){localStorage.setItem('eyl_pts',JSON.stringify(d))},
+  getEvs(id){return JSON.parse(localStorage.getItem('eyl_ev_'+id)||'[]')},
+  saveEvs(id,d){localStorage.setItem('eyl_ev_'+id,JSON.stringify(d))},
+  getVids(id){return JSON.parse(localStorage.getItem('eyl_vid_'+id)||'[]')},
+  saveVids(id,d){localStorage.setItem('eyl_vid_'+id,JSON.stringify(d))},
+  getRpts(id){return JSON.parse(localStorage.getItem('eyl_rpt_'+id)||'[]')},
+  saveRpts(id,d){localStorage.setItem('eyl_rpt_'+id,JSON.stringify(d))},
 };
 
 // 評価フィールド定義
-const FIELDS = [
-  {id:'10mwt-c', label:'10MWT 快適（秒）', lower:true},
-  {id:'10mwt-m', label:'10MWT 最大（秒）', lower:true},
-  {id:'tug',     label:'TUG（秒）',        lower:true},
-  {id:'frt',     label:'FRT（cm）',         lower:false},
-  {id:'5sts',    label:'5×STS（秒）',       lower:true},
-  {id:'fact',    label:'FACT（点）',         lower:false},
-  {id:'fmaue',   label:'FMA-UE（点）',       lower:false},
-  {id:'fmale',   label:'FMA-LE（点）',       lower:false},
-  {id:'grip-h',  label:'握力 健側（kg）',    lower:false},
-  {id:'grip-a',  label:'握力 患側（kg）',    lower:false},
-  {id:'arm-h',   label:'上腕周計 健（cm）',  lower:false},
-  {id:'arm-a',   label:'上腕周計 患（cm）',  lower:false},
-  {id:'thigh-h', label:'大腿周計 健（cm）',  lower:false},
-  {id:'thigh-a', label:'大腿周計 患（cm）',  lower:false},
-  {id:'wmft-fas',label:'WMFT FAS（点）',     lower:false},
-  {id:'wmft-t',  label:'WMFT 時間（秒）',    lower:true},
-  {id:'mal-aou', label:'MAL-AOU（点）',      lower:false},
-  {id:'mal-qom', label:'MAL-QOM（点）',      lower:false},
-  {id:'mas-u',   label:'MAS 上肢（点）',     lower:true},
-  {id:'mas-l',   label:'MAS 下肢（点）',     lower:true},
-  {id:'rom-sh',  label:'ROM 肩屈曲（°）',    lower:false},
-  {id:'rom-ank', label:'ROM 足背屈（°）',    lower:false},
+const FIELDS=[
+  {id:'tug-r',    label:'TUG 右回り（秒）',  lower:true},
+  {id:'tug-l',    label:'TUG 左回り（秒）',  lower:true},
+  {id:'10c',      label:'10MWT 快適（秒）',   lower:true},
+  {id:'10m',      label:'10MWT 最大（秒）',   lower:true},
+  {id:'frt',      label:'FRT（cm）',          lower:false},
+  {id:'5sts',     label:'5×STS（秒）',        lower:true},
+  {id:'fact',     label:'FACT（点）',          lower:false},
+  {id:'fmaue',    label:'FMA-UE（点）',        lower:false},
+  {id:'fmale',    label:'FMA-LE（点）',        lower:false},
+  {id:'grip-r',   label:'握力 右（kg）',       lower:false},
+  {id:'grip-l',   label:'握力 左（kg）',       lower:false},
+  {id:'arm-r',    label:'上腕周計 右（cm）',   lower:false},
+  {id:'arm-l',    label:'上腕周計 左（cm）',   lower:false},
+  {id:'thigh-r',  label:'大腿周計 右（cm）',   lower:false},
+  {id:'thigh-l',  label:'大腿周計 左（cm）',   lower:false},
+  {id:'wmft-fas', label:'WMFT FAS（点）',      lower:false},
+  {id:'wmft-t',   label:'WMFT 時間（秒）',     lower:true},
+  {id:'mal-aou',  label:'MAL-AOU（点）',       lower:false},
+  {id:'mal-qom',  label:'MAL-QOM（点）',       lower:false},
+  {id:'mas-u',    label:'MAS 上肢（点）',      lower:true},
+  {id:'mas-l',    label:'MAS 下肢（点）',      lower:true},
+  {id:'rom-sh',   label:'ROM 肩屈曲（°）',     lower:false},
+  {id:'rom-ank',  label:'ROM 足背屈（°）',     lower:false},
 ];
 
-// ══════════════════════════════════════════════
-// 状態
-// ══════════════════════════════════════════════
-let currentPtId = null;
-let mainChartInst = null;
-let aggChartInst = null;
-let pieChartInst = null;
-let currentChartKey = null;
+// 2回計測フィールド
+const DUAL_FIELDS=['tug-r','tug-l','10c','10m','frt','5sts'];
+
+let curPtId=null;
+let mainChart=null,aggChart=null,pieChart=null;
+const COLORS=['#028090','#534AB7','#BA7517','#D85A30','#1D9E75','#5DCAA5','#7F77DD','#EF9F27'];
+const PAGE_ORDER=['patients','assess','history','graph','video','report','aggregate'];
 
 // ══════════════════════════════════════════════
-// ナビゲーション
+// ナビ
 // ══════════════════════════════════════════════
-const PAGE_ORDER = ['patients','assess','graph','video','report','aggregate'];
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active', PAGE_ORDER[i]===id);
-  });
-  if(id==='patients') renderPatientList();
-  if(id==='graph')    renderGraph();
-  if(id==='video')    renderVideoList();
-  if(id==='report')   renderReportPage();
-  if(id==='aggregate')renderAggregate();
+  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('active',PAGE_ORDER[i]===id));
+  const fns={patients:renderPtList,history:renderHistory,graph:renderGraph,
+             video:renderVidList,report:renderReportPage,aggregate:renderAggregate};
+  if(fns[id]) fns[id]();
+}
+
+// ══════════════════════════════════════════════
+// 2回計測の平均計算
+// ══════════════════════════════════════════════
+function calcAvg(key){
+  const v1=parseFloat(document.getElementById('v-'+key+'1')?.value);
+  const v2=parseFloat(document.getElementById('v-'+key+'2')?.value);
+  const el=document.getElementById('avg-'+key);
+  if(!el) return;
+  if(!isNaN(v1)&&!isNaN(v2)){
+    const avg=((v1+v2)/2).toFixed(2);
+    el.textContent='平均: '+avg;
+  } else if(!isNaN(v1)){
+    el.textContent='';
+  } else {
+    el.textContent='';
+  }
+}
+
+function getDualAvg(key){
+  const v1=parseFloat(document.getElementById('v-'+key+'1')?.value);
+  const v2=parseFloat(document.getElementById('v-'+key+'2')?.value);
+  if(!isNaN(v1)&&!isNaN(v2)) return parseFloat(((v1+v2)/2).toFixed(2));
+  if(!isNaN(v1)) return v1;
+  return null;
 }
 
 // ══════════════════════════════════════════════
 // 利用者管理
 // ══════════════════════════════════════════════
-function renderPatientList(){
-  const pts = DB.getPatients();
-  const el = document.getElementById('patient-list');
-  if(!pts.length){
-    el.innerHTML='<div class="empty-msg">利用者が登録されていません<br>下のボタンから追加してください</div>';
-    return;
-  }
-  el.innerHTML = pts.map(p=>{
-    const evals = DB.getEvals(p.id);
-    const lastEval = evals.length ? evals[evals.length-1].date : '未実施';
-    const badgeCls = p.chief==='上肢麻痺'?'badge-t':'badge-a';
-    const age = calcAge(p.dob);
-    const monthsPost = calcMonthsPost(p.onset);
-    return `<div class="pt-item" onclick="selectPatient('${p.id}')">
-      <div class="pt-av">${p.name.charAt(0)}</div>
-      <div class="pt-info">
-        <div class="pt-name">${p.name}<span class="badge ${badgeCls}">${p.chief}</span></div>
-        <div class="pt-meta">${age}歳・${p.sex}　発症後 ${monthsPost}ヶ月　最終評価: ${lastEval}</div>
-      </div>
-      <div style="color:var(--gray-m);font-size:18px">›</div>
-    </div>`;
-  }).join('');
-}
-
 function calcAge(dob){
   if(!dob) return '—';
-  const b=new Date(dob), n=new Date();
+  const b=new Date(dob),n=new Date();
   let a=n.getFullYear()-b.getFullYear();
   if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate())) a--;
   return a;
 }
-function calcMonthsPost(onset){
+function calcMo(onset){
   if(!onset) return '—';
-  const o=new Date(onset+'-01'), n=new Date();
+  const o=new Date(onset+'-01'),n=new Date();
   return (n.getFullYear()-o.getFullYear())*12+(n.getMonth()-o.getMonth());
 }
 
-function saveNewPatient(){
-  const name = document.getElementById('np-name').value.trim();
-  if(!name){toast('氏名を入力してください');return;}
-  const pts = DB.getPatients();
-  const pt = {
-    id: 'pt_'+Date.now(),
-    name, dob: document.getElementById('np-dob').value,
-    sex: document.getElementById('np-sex').value,
-    dx: document.getElementById('np-dx').value,
-    onset: document.getElementById('np-onset').value,
-    side: document.getElementById('np-side').value,
-    chief: document.getElementById('np-chief').value,
-    dr: document.getElementById('np-dr').value,
-    createdAt: new Date().toISOString(),
-  };
-  pts.push(pt);
-  DB.savePatients(pts);
-  closeModal(null,'modal-new-pt');
-  toast('利用者を登録しました');
-  renderPatientList();
-  selectPatient(pt.id);
+function renderPtList(){
+  const pts=DB.getPts();
+  const el=document.getElementById('pt-list');
+  if(!pts.length){el.innerHTML='<div class="empty-msg">利用者が登録されていません<br>下のボタンから追加してください</div>';return;}
+  el.innerHTML=pts.map(p=>{
+    const evs=DB.getEvs(p.id);
+    const last=evs.length?evs[evs.length-1].date:'未実施';
+    const bc=p.chief==='上肢麻痺'?'badge-t':'badge-a';
+    return `<div class="pt-item">
+      <div class="pt-av" onclick="selectPt('${p.id}')">${p.name.charAt(0)}</div>
+      <div class="pt-info" onclick="selectPt('${p.id}')">
+        <div class="pt-nm">${p.name}<span class="badge ${bc}">${p.chief}</span></div>
+        <div class="pt-meta">${calcAge(p.dob)}歳・${p.sex}　発症後${calcMo(p.onset)}ヶ月　最終評価:${last}</div>
+      </div>
+      <button class="icon-btn" onclick="openEditPt('${p.id}')">✏️</button>
+    </div>`;
+  }).join('');
 }
 
-function selectPatient(ptId){
-  currentPtId = ptId;
-  const pt = DB.getPatients().find(p=>p.id===ptId);
+function saveNewPatient(){
+  const name=document.getElementById('np-name').value.trim();
+  if(!name){toast('氏名を入力してください');return;}
+  const pts=DB.getPts();
+  const pt={
+    id:'pt_'+Date.now(), name,
+    dob:document.getElementById('np-dob').value,
+    sex:document.getElementById('np-sex').value,
+    dx:document.getElementById('np-dx').value,
+    onset:document.getElementById('np-onset').value,
+    side:document.getElementById('np-side').value,
+    chief:document.getElementById('np-chief').value,
+    dr:document.getElementById('np-dr').value,
+    goal:document.getElementById('np-goal').value,
+  };
+  pts.push(pt);DB.savePts(pts);
+  closeModal(null,'modal-new-pt');
+  toast('利用者を登録しました');
+  renderPtList();selectPt(pt.id);
+}
+
+function openEditPt(ptId){
+  const pt=DB.getPts().find(p=>p.id===ptId);
   if(!pt) return;
-  // 評価入力ページへ
-  document.getElementById('assess-pt-name').textContent = pt.name;
-  document.getElementById('assess-pt-meta').textContent = `${pt.side}・${pt.chief}`;
-  document.getElementById('graph-pt-name').textContent = pt.name;
-  document.getElementById('video-pt-name').textContent = pt.name;
-  document.getElementById('report-pt-name').textContent = pt.name;
-  // フォームをリセット
+  curPtId=ptId;
+  document.getElementById('ep-name').value=pt.name||'';
+  document.getElementById('ep-dob').value=pt.dob||'';
+  document.getElementById('ep-sex').value=pt.sex||'男性';
+  document.getElementById('ep-dx').value=pt.dx||'';
+  document.getElementById('ep-onset').value=pt.onset||'';
+  document.getElementById('ep-side').value=pt.side||'右片麻痺';
+  document.getElementById('ep-chief').value=pt.chief||'上肢麻痺';
+  document.getElementById('ep-dr').value=pt.dr||'';
+  document.getElementById('ep-goal').value=pt.goal||'';
+  openModal('modal-edit-pt');
+}
+
+function updatePatient(){
+  const pts=DB.getPts();
+  const i=pts.findIndex(p=>p.id===curPtId);
+  if(i<0) return;
+  pts[i]={...pts[i],
+    name:document.getElementById('ep-name').value,
+    dob:document.getElementById('ep-dob').value,
+    sex:document.getElementById('ep-sex').value,
+    dx:document.getElementById('ep-dx').value,
+    onset:document.getElementById('ep-onset').value,
+    side:document.getElementById('ep-side').value,
+    chief:document.getElementById('ep-chief').value,
+    dr:document.getElementById('ep-dr').value,
+    goal:document.getElementById('ep-goal').value,
+  };
+  DB.savePts(pts);closeModal(null,'modal-edit-pt');
+  renderPtList();toast('利用者情報を更新しました');
+}
+
+function deletePatient(){
+  if(!confirm('この利用者と全評価データを削除しますか？')) return;
+  const pts=DB.getPts().filter(p=>p.id!==curPtId);
+  DB.savePts(pts);
+  localStorage.removeItem('eyl_ev_'+curPtId);
+  localStorage.removeItem('eyl_vid_'+curPtId);
+  localStorage.removeItem('eyl_rpt_'+curPtId);
+  curPtId=null;closeModal(null,'modal-edit-pt');
+  renderPtList();toast('利用者を削除しました');showPage('patients');
+}
+
+function selectPt(ptId){
+  curPtId=ptId;
+  const pt=DB.getPts().find(p=>p.id===ptId);
+  if(!pt) return;
+  const nm=pt.name, sub=pt.side+'・'+pt.chief;
+  ['assess-nm','graph-nm','vid-nm','rpt-nm','hist-nm'].forEach(id=>{
+    const el=document.getElementById(id);if(el) el.textContent=nm;
+  });
+  document.getElementById('assess-sub').textContent=sub;
   clearAssessForm();
-  // 今日の日付をセット
-  document.getElementById('ev-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
   showPage('assess');
 }
 
 // ══════════════════════════════════════════════
-// 評価入力・保存
+// 評価入力
 // ══════════════════════════════════════════════
 function clearAssessForm(){
-  FIELDS.forEach(f=>{
-    const el=document.getElementById('v-'+f.id);
-    if(el) el.value='';
+  DUAL_FIELDS.forEach(k=>{
+    const e1=document.getElementById('v-'+k+'1'),e2=document.getElementById('v-'+k+'2');
+    if(e1) e1.value='';if(e2) e2.value='';
+    const av=document.getElementById('avg-'+k);if(av) av.textContent='';
+  });
+  ['fact','fmaue','fmale','grip-r','grip-l','arm-r','arm-l','thigh-r','thigh-l',
+   'wmft-fas','wmft-t','mal-aou','mal-qom','mas-u','mas-l','rom-sh','rom-ank'].forEach(k=>{
+    const el=document.getElementById('v-'+k);if(el) el.value='';
   });
   document.getElementById('v-comment').value='';
-  document.getElementById('btn-del-eval').style.display='none';
 }
 
 function saveAssessment(){
-  if(!currentPtId){toast('利用者を選択してください');return;}
-  const date = document.getElementById('ev-date').value;
+  if(!curPtId){toast('利用者を選択してください');return;}
+  const date=document.getElementById('ev-date').value;
   if(!date){toast('評価日を入力してください');return;}
-  const values = {};
-  FIELDS.forEach(f=>{
-    const el=document.getElementById('v-'+f.id);
-    if(el && el.value!=='') values[f.id]=parseFloat(el.value);
+
+  const values={};
+  // 2回計測フィールド（平均値を保存）
+  DUAL_FIELDS.forEach(k=>{
+    const avg=getDualAvg(k);
+    if(avg!=null) values[k]=avg;
   });
-  const evalData = {
-    id: 'ev_'+Date.now(),
-    date, type: document.getElementById('ev-type').value,
-    values, comment: document.getElementById('v-comment').value,
+  // 通常フィールド
+  ['fact','fmaue','fmale','grip-r','grip-l','arm-r','arm-l','thigh-r','thigh-l',
+   'wmft-fas','wmft-t','mal-aou','mal-qom','mas-u','mas-l','rom-sh','rom-ank'].forEach(k=>{
+    const el=document.getElementById('v-'+k);
+    if(el&&el.value!=='') values[k]=parseFloat(el.value);
+  });
+  // 生データ（2回分）も保存
+  const rawTrials={};
+  DUAL_FIELDS.forEach(k=>{
+    const v1=document.getElementById('v-'+k+'1')?.value;
+    const v2=document.getElementById('v-'+k+'2')?.value;
+    if(v1||v2) rawTrials[k]=[v1||null,v2||null];
+  });
+
+  const ev={
+    id:'ev_'+Date.now(), date,
+    type:document.getElementById('ev-type').value,
+    orthosis:document.getElementById('ev-orthosis').value,
+    aid:document.getElementById('ev-aid').value,
+    values, rawTrials,
+    comment:document.getElementById('v-comment').value,
   };
-  const evals = DB.getEvals(currentPtId);
-  evals.push(evalData);
-  evals.sort((a,b)=>a.date.localeCompare(b.date));
-  DB.saveEvals(currentPtId, evals);
-  toast('評価データを保存しました');
-  document.getElementById('btn-del-eval').style.display='block';
+  const evs=DB.getEvs(curPtId);
+  evs.push(ev);evs.sort((a,b)=>a.date.localeCompare(b.date));
+  DB.saveEvs(curPtId,evs);
+  toast('評価を保存しました');
+  clearAssessForm();
 }
 
-function deleteLastEval(){
-  if(!currentPtId) return;
-  const evals = DB.getEvals(currentPtId);
-  if(!evals.length) return;
-  evals.pop();
-  DB.saveEvals(currentPtId, evals);
-  clearAssessForm();
-  toast('最後の評価を削除しました');
+// ══════════════════════════════════════════════
+// 記録閲覧（数値＋コメント）
+// ══════════════════════════════════════════════
+function renderHistory(){
+  if(!curPtId) return;
+  const evs=DB.getEvs(curPtId);
+  const el=document.getElementById('hist-list');
+  document.getElementById('hist-nm').textContent=
+    DB.getPts().find(p=>p.id===curPtId)?.name||'—';
+  if(!evs.length){el.innerHTML='<div class="empty-msg">評価データがありません</div>';return;}
+  el.innerHTML=[...evs].reverse().map(ev=>{
+    const vals=FIELDS.filter(f=>ev.values[f.id]!=null)
+      .map(f=>`<span class="ev-val">${f.label.replace(/（.*）/,'')}: <b>${ev.values[f.id]}</b></span>`).join('');
+    const aid=ev.orthosis&&ev.orthosis!=='なし'?`装具:${ev.orthosis} `:'' ;
+    const aidStr=aid+(ev.aid&&ev.aid!=='なし'?`補助具:${ev.aid}`:'');
+    return `<div class="ev-item">
+      <div><span class="ev-date">${ev.date}</span><span class="ev-type">${ev.type}</span>${aidStr?`<span style="font-size:10px;color:var(--amber);margin-left:6px">${aidStr}</span>`:''}</div>
+      <div class="ev-vals" style="margin-top:7px">${vals||'<span style="color:var(--sub);font-size:11px">数値の記録なし</span>'}</div>
+      ${ev.comment?`<div class="ev-comment">"${ev.comment}"</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════
 // グラフ
 // ══════════════════════════════════════════════
-const CHART_COLORS = ['#028090','#534AB7','#BA7517','#D85A30','#1D9E75','#5DCAA5','#7F77DD','#EF9F27'];
-
 function renderGraph(){
-  if(!currentPtId){document.getElementById('graph-no-data').style.display='block';document.getElementById('graph-content').style.display='none';return;}
-  const evals = DB.getEvals(currentPtId);
-  if(!evals.length){document.getElementById('graph-no-data').style.display='block';document.getElementById('graph-content').style.display='none';return;}
-  document.getElementById('graph-no-data').style.display='none';
+  if(!curPtId){document.getElementById('graph-empty').style.display='block';document.getElementById('graph-content').style.display='none';return;}
+  const evs=DB.getEvs(curPtId);
+  if(!evs.length){document.getElementById('graph-empty').style.display='block';document.getElementById('graph-content').style.display='none';return;}
+  document.getElementById('graph-empty').style.display='none';
   document.getElementById('graph-content').style.display='block';
 
-  // 存在するフィールドを特定
-  const activeFields = FIELDS.filter(f=> evals.some(e=>e.values[f.id]!=null));
-
-  // サマリー上段（最初3つ）
-  const statsEl = document.getElementById('stats-row');
-  statsEl.innerHTML = activeFields.slice(0,3).map(f=>{
-    const vals = evals.map(e=>e.values[f.id]).filter(v=>v!=null);
-    const first=vals[0], last=vals[vals.length-1];
-    const diff = last-first;
-    const improved = f.lower ? diff<0 : diff>0;
-    const sign = diff>0?'+':'';
-    return `<div class="sbox">
-      <div class="sv">${last}</div>
-      <div class="sl">${f.label}</div>
-      <div class="sc" style="color:${improved?'var(--green)':'var(--coral)'}">${sign}${diff.toFixed(1)} 改善</div>
-    </div>`;
+  const activeF=FIELDS.filter(f=>evs.some(e=>e.values[f.id]!=null));
+  // stats上段3つ
+  const sr=document.getElementById('stats-row');
+  sr.innerHTML=activeF.slice(0,3).map(f=>{
+    const vals=evs.map(e=>e.values[f.id]).filter(v=>v!=null);
+    const diff=vals[vals.length-1]-vals[0];
+    const imp=f.lower?diff<0:diff>0;
+    return `<div class="sbox"><div class="sv">${vals[vals.length-1]}</div><div class="sl2">${f.label.replace(/（.*）/,'')}</div>
+      <div class="sc" style="color:${imp?'var(--green)':'var(--coral)'}">${diff>0?'+':''}${diff.toFixed(1)}</div></div>`;
   }).join('');
 
-  // チャートピル
-  const pillsEl = document.getElementById('chart-pills');
-  pillsEl.innerHTML = activeFields.map((f,i)=>
+  const pills=document.getElementById('cpills');
+  pills.innerHTML=activeF.map((f,i)=>
     `<div class="cpill${i===0?' active':''}" onclick="switchChart('${f.id}',this)">${f.label.replace(/（.*）/,'')}</div>`
   ).join('');
-
-  // 初期チャート描画
-  currentChartKey = activeFields[0]?.id;
-  drawMainChart(evals, activeFields[0]);
+  drawChart(evs,activeF[0]);
 }
 
-function drawMainChart(evals, field){
+function drawChart(evs,field){
   if(!field) return;
-  const labels = evals.map(e=>e.date.slice(5));
-  const data = evals.map(e=>e.values[field.id]??null);
-  const color = CHART_COLORS[FIELDS.findIndex(f=>f.id===field.id) % CHART_COLORS.length];
-  document.getElementById('chart-title').textContent = field.label + ' の推移';
-  document.getElementById('chart-dir').textContent = field.lower?'低いほど良好':'高いほど良好';
-  const ctx = document.getElementById('mainChart').getContext('2d');
-  if(mainChartInst) mainChartInst.destroy();
-  mainChartInst = new Chart(ctx,{
-    type:'line',
-    data:{ labels, datasets:[{
-      label:field.label, data, borderColor:color,
-      backgroundColor:color+'20', tension:.3, pointRadius:6,
-      pointBackgroundColor:color, fill:true, spanGaps:true,
-    }]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
+  const labels=evs.map(e=>e.date.slice(5));
+  const data=evs.map(e=>e.values[field.id]??null);
+  const color=COLORS[FIELDS.findIndex(f=>f.id===field.id)%COLORS.length];
+  document.getElementById('chart-title').textContent=field.label+' の推移';
+  document.getElementById('chart-dir').textContent=field.lower?'低いほど良好':'高いほど良好';
+  const ctx=document.getElementById('mainChart').getContext('2d');
+  if(mainChart) mainChart.destroy();
+  mainChart=new Chart(ctx,{type:'line',
+    data:{labels,datasets:[{label:field.label,data,borderColor:color,
+      backgroundColor:color+'20',tension:.3,pointRadius:6,pointBackgroundColor:color,fill:true,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{
-        y:{grid:{color:'#F1EFE8'}, ticks:{font:{size:12}}},
-        x:{grid:{display:false}, ticks:{font:{size:11}}},
-      }
-    }
+      scales:{y:{grid:{color:'#F1EFE8'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
   });
 }
 
-function switchChart(fieldId, el){
+function switchChart(fid,el){
   document.querySelectorAll('.cpill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  currentChartKey = fieldId;
-  const evals = DB.getEvals(currentPtId);
-  const field = FIELDS.find(f=>f.id===fieldId);
-  drawMainChart(evals, field);
+  const evs=DB.getEvs(curPtId);
+  drawChart(evs,FIELDS.find(f=>f.id===fid));
 }
 
 // ══════════════════════════════════════════════
-// 動画管理
+// 動画
 // ══════════════════════════════════════════════
-function renderVideoList(){
-  if(!currentPtId) return;
-  const videos = DB.getVideos(currentPtId);
-  const el = document.getElementById('video-list');
-  if(!videos.length){el.innerHTML='<div class="empty-msg">動画がありません</div>';return;}
-  el.innerHTML = videos.map((v,i)=>`
-    <div class="vi">
-      <div class="vthumb">▶</div>
-      <div class="vi-info">
-        <div class="vi-title"><a href="${v.url}" target="_blank" style="color:var(--teal);text-decoration:none">${v.type}</a></div>
-        <div class="vi-meta">${v.date}　${v.memo||''}</div>
-      </div>
-      <div class="vi-del" onclick="deleteVideo(${i})">×</div>
-    </div>`).join('');
-  // 今日の日付をセット
-  document.getElementById('vid-date').value = new Date().toISOString().split('T')[0];
+function renderVidList(){
+  if(!curPtId) return;
+  const vids=DB.getVids(curPtId);
+  const el=document.getElementById('vid-list');
+  if(!vids.length){el.innerHTML='<div class="empty-msg">動画がありません</div>';return;}
+  el.innerHTML=vids.map((v,i)=>`<div class="vi">
+    <div class="vt">▶</div>
+    <div class="vi-info">
+      <div class="vi-title"><a href="${v.url}" target="_blank" style="color:var(--teal);text-decoration:none">${v.type}</a></div>
+      <div class="vi-meta">${v.date}　${v.memo||''}</div>
+    </div>
+    <button class="icon-btn" onclick="delVid(${i})" style="color:var(--coral)">×</button>
+  </div>`).join('');
+  document.getElementById('vid-date').value=new Date().toISOString().split('T')[0];
 }
 
 function saveVideo(){
-  if(!currentPtId){toast('利用者を選択してください');return;}
-  const url = document.getElementById('vid-url').value.trim();
+  if(!curPtId){toast('利用者を選択してください');return;}
+  const url=document.getElementById('vid-url').value.trim();
   if(!url){toast('URLを入力してください');return;}
-  const videos = DB.getVideos(currentPtId);
-  videos.push({
-    type: document.getElementById('vid-type').value,
-    date: document.getElementById('vid-date').value,
-    url, memo: document.getElementById('vid-memo').value,
-  });
-  DB.saveVideos(currentPtId, videos);
-  document.getElementById('vid-url').value='';
-  document.getElementById('vid-memo').value='';
-  renderVideoList();
-  toast('動画リンクを保存しました');
+  const vids=DB.getVids(curPtId);
+  vids.push({type:document.getElementById('vid-type').value,
+    date:document.getElementById('vid-date').value,url,
+    memo:document.getElementById('vid-memo').value});
+  DB.saveVids(curPtId,vids);
+  document.getElementById('vid-url').value='';document.getElementById('vid-memo').value='';
+  renderVidList();toast('動画リンクを保存しました');
 }
 
-function deleteVideo(idx){
-  const videos = DB.getVideos(currentPtId);
-  videos.splice(idx,1);
-  DB.saveVideos(currentPtId, videos);
-  renderVideoList();
+function delVid(i){
+  const vids=DB.getVids(curPtId);vids.splice(i,1);
+  DB.saveVids(curPtId,vids);renderVidList();
 }
 
 // ══════════════════════════════════════════════
 // Dr.レポート
 // ══════════════════════════════════════════════
 function renderReportPage(){
-  if(!currentPtId) return;
-  const evals = DB.getEvals(currentPtId);
-  const bSel = document.getElementById('rpt-before');
-  const aSel = document.getElementById('rpt-after');
-  bSel.innerHTML = evals.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
-  aSel.innerHTML = evals.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
-  if(evals.length>1) aSel.value = evals.length-1;
-  renderReport();
+  if(!curPtId) return;
+  const evs=DB.getEvs(curPtId);
+  const bSel=document.getElementById('rpt-before'),aSel=document.getElementById('rpt-after');
+  bSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
+  aSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
+  if(evs.length>1) aSel.value=evs.length-1;
+  renderReport();renderSavedRpts();
 }
 
 function renderReport(){
-  if(!currentPtId) return;
-  const evals = DB.getEvals(currentPtId);
-  if(!evals.length) return;
-  const bi = parseInt(document.getElementById('rpt-before').value)||0;
-  const ai = parseInt(document.getElementById('rpt-after').value)||0;
-  const before = evals[bi], after = evals[ai];
-
-  // プレビューテーブル
-  const rows = FIELDS.filter(f=>
-    before.values[f.id]!=null || after.values[f.id]!=null
-  ).map(f=>{
-    const bv = before.values[f.id]??'—';
-    const av = after.values[f.id]??'—';
-    let chg='—', cls='chg-0';
+  if(!curPtId) return;
+  const evs=DB.getEvs(curPtId);if(!evs.length) return;
+  const bi=parseInt(document.getElementById('rpt-before').value)||0;
+  const ai=parseInt(document.getElementById('rpt-after').value)||0;
+  const bev=evs[bi],aev=evs[ai];
+  const rows=FIELDS.filter(f=>bev.values[f.id]!=null||aev.values[f.id]!=null).map(f=>{
+    const bv=bev.values[f.id]??'—',av=aev.values[f.id]??'—';
+    let chg='—',cls='chg-0';
     if(typeof bv==='number'&&typeof av==='number'){
-      const d=av-bv;
-      const imp = f.lower?d<0:d>0;
-      chg=(d>0?'+':'')+d.toFixed(1);
-      cls = imp?'chg-p':'chg-n';
+      const d=av-bv,imp=f.lower?d<0:d>0;
+      chg=(d>0?'+':'')+d.toFixed(1);cls=imp?'chg-p':'chg-n';
     }
     return `<tr><td>${f.label}</td><td>${bv}</td><td>${av}</td><td class="${cls}">${chg}</td></tr>`;
   }).join('');
-  document.getElementById('rpt-preview-table').innerHTML =
-    '<tr><th>評価項目</th><th>Before</th><th>After</th><th>変化</th></tr>' + rows;
+  document.getElementById('rpt-preview').innerHTML=
+    '<tr><th>評価項目</th><th>Before</th><th>After</th><th>変化</th></tr>'+rows;
 
-  // 印刷用レポートも更新
-  const pt = DB.getPatients().find(p=>p.id===currentPtId);
-  const today = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('pr-date-block').innerHTML = `作成日：${today}<br>報告期間：${before.date} → ${after.date}`;
-  document.getElementById('pr-footer-date').textContent = today;
-
-  document.getElementById('pr-basic-table').innerHTML = pt ? `
+  // 印刷用更新
+  const pt=DB.getPts().find(p=>p.id===curPtId);
+  const today=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('pr-date-block').innerHTML=`作成日：${today}<br>報告期間：${bev.date} → ${aev.date}`;
+  document.getElementById('pr-foot-date').textContent=today;
+  document.getElementById('pr-goal-print').textContent=pt?.goal||'（未設定）';
+  document.getElementById('pr-aid-print').innerHTML=
+    `Before（${bev.date}）：装具 ${bev.orthosis||'—'} / 歩行補助具 ${bev.aid||'—'}<br>`+
+    `After（${aev.date}）：装具 ${aev.orthosis||'—'} / 歩行補助具 ${aev.aid||'—'}`;
+  document.getElementById('pr-basic').innerHTML=pt?`
     <tr><th>氏名</th><td>${pt.name}</td><th>生年月日（年齢）</th><td>${pt.dob||'—'}（${calcAge(pt.dob)}歳）</td></tr>
     <tr><th>診断名</th><td>${pt.dx||'—'}</td><th>発症年月</th><td>${pt.onset||'—'}</td></tr>
     <tr><th>麻痺側</th><td>${pt.side||'—'}</td><th>主訴</th><td>${pt.chief||'—'}</td></tr>
-    <tr><th>主治医</th><td colspan="3">${pt.dr||'—'}</td></tr>` : '';
-
-  document.getElementById('pr-eval-table').innerHTML =
-    '<tr><th>評価項目</th><th>Before（'+before.date+'）</th><th>After（'+after.date+'）</th><th>変化</th></tr>' + rows;
+    <tr><th>主治医</th><td colspan="3">${pt.dr||'—'}</td></tr>`:'';
+  document.getElementById('pr-eval').innerHTML=
+    `<tr><th>評価項目</th><th>Before（${bev.date}）</th><th>After（${aev.date}）</th><th>変化</th></tr>`+rows;
 }
 
 function printReport(){
-  const comment = document.getElementById('rpt-comment').value;
-  document.getElementById('pr-comment-print').textContent = comment || '（コメントなし）';
+  document.getElementById('pr-comment-print').textContent=
+    document.getElementById('rpt-comment').value||'（コメントなし）';
   window.print();
+}
+
+function saveReport(){
+  if(!curPtId) return;
+  const evs=DB.getEvs(curPtId);if(!evs.length) return;
+  const bi=parseInt(document.getElementById('rpt-before').value)||0;
+  const ai=parseInt(document.getElementById('rpt-after').value)||0;
+  const rpts=DB.getRpts(curPtId);
+  rpts.push({
+    id:'rpt_'+Date.now(),
+    savedAt:new Date().toISOString().split('T')[0],
+    before:evs[bi].date,after:evs[evs.length>1?ai:0].date,
+    comment:document.getElementById('rpt-comment').value,
+  });
+  DB.saveRpts(curPtId,rpts);renderSavedRpts();toast('レポートを保存しました');
+}
+
+function renderSavedRpts(){
+  if(!curPtId) return;
+  const rpts=DB.getRpts(curPtId);
+  const el=document.getElementById('saved-rpt-list');
+  if(!rpts.length){el.innerHTML='<div class="empty-msg">保存済みレポートがありません</div>';return;}
+  el.innerHTML=[...rpts].reverse().map((r,i)=>`
+    <div class="rpt-saved-item">
+      <div style="font-size:13px;font-weight:600">${r.savedAt} 作成</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:2px">比較期間：${r.before} → ${r.after}</div>
+      ${r.comment?`<div style="font-size:11px;color:var(--sub);margin-top:4px;font-style:italic">"${r.comment.slice(0,60)}${r.comment.length>60?'…':''}"</div>`:''}
+    </div>`).join('');
 }
 
 // ══════════════════════════════════════════════
 // EYL集計
 // ══════════════════════════════════════════════
 function renderAggregate(){
-  const pts = DB.getPatients();
-  const totalEvals = pts.reduce((s,p)=>s+DB.getEvals(p.id).length, 0);
-
-  // 集計カード
-  const chiefMap = pts.reduce((m,p)=>{m[p.chief]=(m[p.chief]||0)+1;return m},{});
-  document.getElementById('agg-stats').innerHTML = `
+  const pts=DB.getPts();
+  const totalEvs=pts.reduce((s,p)=>s+DB.getEvs(p.id).length,0);
+  const chiefMap=pts.reduce((m,p)=>{m[p.chief]=(m[p.chief]||0)+1;return m},{});
+  document.getElementById('agg-stats').innerHTML=`
     <div class="agg-card"><div class="agg-val">${pts.length}</div><div class="agg-label">総利用者数</div></div>
-    <div class="agg-card"><div class="agg-val">${totalEvals}</div><div class="agg-label">総評価件数</div></div>
+    <div class="agg-card"><div class="agg-val">${totalEvs}</div><div class="agg-label">総評価件数</div></div>
     ${Object.entries(chiefMap).map(([k,v])=>`<div class="agg-card"><div class="agg-val">${v}</div><div class="agg-label">${k}</div></div>`).join('')}`;
 
-  // 平均改善量（初回→最終の差）
-  const improvements = {};
+  const imps={};
   FIELDS.forEach(f=>{
-    const diffs = pts.map(p=>{
-      const ev=DB.getEvals(p.id);
-      if(ev.length<2) return null;
-      const fv=ev[0].values[f.id], lv=ev[ev.length-1].values[f.id];
+    const diffs=pts.map(p=>{
+      const ev=DB.getEvs(p.id);if(ev.length<2) return null;
+      const fv=ev[0].values[f.id],lv=ev[ev.length-1].values[f.id];
       if(fv==null||lv==null) return null;
-      return f.lower ? fv-lv : lv-fv;
+      return f.lower?fv-lv:lv-fv;
     }).filter(v=>v!=null);
-    if(diffs.length) improvements[f.id]={label:f.label, avg:diffs.reduce((a,b)=>a+b,0)/diffs.length};
+    if(diffs.length) imps[f.id]={label:f.label,avg:diffs.reduce((a,b)=>a+b,0)/diffs.length};
   });
-
-  const impEntries = Object.values(improvements).filter(x=>x.avg>0).slice(0,8);
-  if(aggChartInst) aggChartInst.destroy();
-  if(impEntries.length){
-    aggChartInst = new Chart(document.getElementById('aggChart').getContext('2d'),{
+  const ie=Object.values(imps).filter(x=>x.avg>0).slice(0,8);
+  if(aggChart) aggChart.destroy();
+  if(ie.length){
+    aggChart=new Chart(document.getElementById('aggChart').getContext('2d'),{
       type:'bar',
-      data:{
-        labels: impEntries.map(x=>x.label.replace(/（.*）/,'')),
-        datasets:[{label:'平均改善量', data:impEntries.map(x=>parseFloat(x.avg.toFixed(2))),
-          backgroundColor:'#5DCAA520', borderColor:'#028090', borderWidth:2, borderRadius:4}]
-      },
+      data:{labels:ie.map(x=>x.label.replace(/（.*）/,'')),
+        datasets:[{label:'平均改善量',data:ie.map(x=>parseFloat(x.avg.toFixed(2))),
+          backgroundColor:'#5DCAA520',borderColor:'#028090',borderWidth:2,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
         scales:{y:{grid:{color:'#F1EFE8'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
   }
-
-  // 主訴別円グラフ
-  if(pieChartInst) pieChartInst.destroy();
-  const labels = Object.keys(chiefMap), vals = Object.values(chiefMap);
-  if(labels.length){
-    pieChartInst = new Chart(document.getElementById('pieChart').getContext('2d'),{
+  if(pieChart) pieChart.destroy();
+  const pl=Object.keys(chiefMap),pv=Object.values(chiefMap);
+  if(pl.length){
+    pieChart=new Chart(document.getElementById('pieChart').getContext('2d'),{
       type:'doughnut',
-      data:{labels, datasets:[{data:vals, backgroundColor:['#7F77DD','#5DCAA5','#EF9F27'], borderWidth:0}]},
+      data:{labels:pl,datasets:[{data:pv,backgroundColor:['#7F77DD','#5DCAA5','#EF9F27'],borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'right',labels:{font:{size:12},padding:16}}}}
+        plugins:{legend:{position:'right',labels:{font:{size:11},padding:14}}}}
     });
   }
 }
 
 // ══════════════════════════════════════════════
-// CSV出力
+// CSV
 // ══════════════════════════════════════════════
 function exportCSV(){
-  if(!currentPtId){toast('利用者を選択してください');return;}
-  const pt = DB.getPatients().find(p=>p.id===currentPtId);
-  const evals = DB.getEvals(currentPtId);
-  const header = ['氏名','評価日','種類',...FIELDS.map(f=>f.label),'コメント'];
-  const rows = evals.map(e=>[
-    pt.name, e.date, e.type,
-    ...FIELDS.map(f=>e.values[f.id]??''),
-    e.comment||''
-  ]);
-  downloadCSV([header,...rows], `EYL_${pt.name}_評価データ.csv`);
+  if(!curPtId){toast('利用者を選択してください');return;}
+  const pt=DB.getPts().find(p=>p.id===curPtId);
+  const evs=DB.getEvs(curPtId);
+  const hdr=['氏名','評価日','種類','装具','歩行補助具',...FIELDS.map(f=>f.label),'コメント'];
+  const rows=evs.map(e=>[pt.name,e.date,e.type,e.orthosis||'',e.aid||'',...FIELDS.map(f=>e.values[f.id]??''),e.comment||'']);
+  dlCSV([hdr,...rows],`EYL_${pt.name}_評価データ.csv`);
 }
-
 function exportAllCSV(){
-  const pts = DB.getPatients();
-  const header = ['氏名','評価日','種類',...FIELDS.map(f=>f.label)];
-  const rows = pts.flatMap(pt=>
-    DB.getEvals(pt.id).map(e=>[pt.name,e.date,e.type,...FIELDS.map(f=>e.values[f.id]??'')])
-  );
-  downloadCSV([header,...rows], 'EYL_全データ.csv');
+  const hdr=['氏名','評価日','種類','装具','歩行補助具',...FIELDS.map(f=>f.label)];
+  const rows=DB.getPts().flatMap(pt=>DB.getEvs(pt.id).map(e=>[pt.name,e.date,e.type,e.orthosis||'',e.aid||'',...FIELDS.map(f=>e.values[f.id]??'')]));
+  dlCSV([hdr,...rows],'EYL_全データ.csv');
 }
-
-function downloadCSV(rows, filename){
-  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();
   toast('CSVをダウンロードしました');
 }
 
@@ -896,17 +1006,65 @@ function downloadCSV(rows, filename){
 // モーダル・トースト
 // ══════════════════════════════════════════════
 function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(e,id){if(!e||e.target.classList.contains('modal-bg'))document.getElementById(id).classList.remove('open')}
+function closeModal(e,id){if(!e||e.target.classList.contains('mbg'))document.getElementById(id).classList.remove('open')}
 function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
 // ══════════════════════════════════════════════
-// 初期化
+// サンプルデータ（初回のみ投入）
 // ══════════════════════════════════════════════
-renderPatientList();
+function seedSampleData(){
+  if(DB.getPts().length>0) return;
+  const pts=[
+    {id:'pt_s1',name:'田中 義雄',dob:'1956-04-12',sex:'男性',dx:'脳梗塞（左中大脳動脈領域）',onset:'2022-11',side:'右片麻痺',chief:'上肢＋歩行',dr:'久留米大学病院 山本先生',goal:'T字杖使用にて屋外歩行自立、患側上肢を食事動作に補助的に使用できる'},
+    {id:'pt_s2',name:'山田 花子',dob:'1952-08-23',sex:'女性',dx:'脳出血（右被殻）',onset:'2023-09',side:'左片麻痺',chief:'歩行障害',dr:'聖マリア病院 田中先生',goal:'屋内歩行を歩行補助具なしで自立、階段の昇降が可能になる'},
+    {id:'pt_s3',name:'鈴木 一郎',dob:'1963-01-07',sex:'男性',dx:'脳梗塞（右中大脳動脈領域）',onset:'2021-05',side:'左片麻痺',chief:'上肢麻痺',dr:'福岡記念病院 佐藤先生',goal:'患側上肢でのリーチ動作改善、MAL-AOU 2.0点以上を目指す'},
+  ];
+  DB.savePts(pts);
+
+  // 田中さん（3回分の評価）
+  DB.saveEvs('pt_s1',[
+    {id:'ev_s1a',date:'2024-04-10',type:'初回評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',
+     values:{'tug-r':18.4,'tug-l':20.1,'10c':22.6,'10m':17.2,'frt':9.5,'5sts':28.4,'fact':14,'fmaue':38,'fmale':18,'grip-r':22.1,'grip-l':7.4,'arm-r':27.2,'arm-l':24.8,'thigh-r':42.1,'thigh-l':39.4},
+     rawTrials:{'tug-r':['18.2','18.6'],'tug-l':['20.4','19.8'],'10c':['23.1','22.1'],'10m':['17.5','16.9'],'frt':['9.0','10.0'],'5sts':['28.8','28.0']},
+     comment:'初回評価。体幹の代償が強く上肢・歩行ともに著明な制限あり。'},
+    {id:'ev_s1b',date:'2024-07-12',type:'3ヶ月定期評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',
+     values:{'tug-r':15.8,'tug-l':17.2,'10c':18.9,'10m':14.4,'frt':13.2,'5sts':23.6,'fact':18,'fmaue':44,'fmale':22,'grip-r':22.4,'grip-l':9.8,'arm-r':27.4,'arm-l':25.6,'thigh-r':42.5,'thigh-l':40.2},
+     rawTrials:{},comment:'体幹機能の改善が歩行速度に反映されてきた。上肢随意性も向上中。'},
+    {id:'ev_s1c',date:'2024-10-15',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',
+     values:{'tug-r':12.6,'tug-l':13.8,'10c':15.4,'10m':11.8,'frt':16.8,'5sts':19.2,'fact':22,'fmaue':51,'fmale':26,'grip-r':22.8,'grip-l':12.4,'arm-r':27.6,'arm-l':26.2,'thigh-r':42.8,'thigh-l':41.0},
+     rawTrials:{},comment:'装具を外した状態で歩行可能になった。FMA-UEが大幅改善、日常生活での麻痺側使用も増加。'},
+  ]);
+
+  // 山田さん（2回分）
+  DB.saveEvs('pt_s2',[
+    {id:'ev_s2a',date:'2024-06-05',type:'初回評価',orthosis:'なし',aid:'四点杖',
+     values:{'tug-r':24.2,'tug-l':22.8,'10c':30.4,'10m':24.6,'frt':7.2,'5sts':34.8,'fact':11,'fmaue':28,'fmale':14,'grip-r':8.6,'grip-l':24.2,'arm-r':23.4,'arm-l':28.8,'thigh-r':37.2,'thigh-l':43.6},
+     rawTrials:{},comment:'歩行不安定、四点杖依存。体幹・下肢ともに著明な機能低下。'},
+    {id:'ev_s2b',date:'2024-09-10',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',
+     values:{'tug-r':19.4,'tug-l':18.6,'10c':24.2,'10m':19.8,'frt':11.4,'5sts':27.6,'fact':16,'fmaue':32,'fmale':18,'grip-r':10.2,'grip-l':24.8,'arm-r':24.0,'arm-l':29.0,'thigh-r':38.4,'thigh-l':43.8},
+     rawTrials:{},comment:'歩行補助具が四点杖からT字杖に変更可能となった。バランス能力の向上が顕著。'},
+  ]);
+
+  // 鈴木さん（2回分）
+  DB.saveEvs('pt_s3',[
+    {id:'ev_s3a',date:'2024-03-20',type:'初回評価',orthosis:'なし',aid:'なし',
+     values:{'tug-r':11.8,'tug-l':12.4,'10c':14.2,'10m':10.8,'frt':18.6,'5sts':16.4,'fact':20,'fmaue':42,'fmale':28,'grip-r':8.2,'grip-l':32.4,'wmft-fas':2.8,'wmft-t':38.4,'mal-aou':1.6,'mal-qom':1.4},
+     rawTrials:{},comment:'歩行は比較的自立しているが上肢機能に著明な制限。WMFTでは近位課題は可能だが遠位が困難。'},
+    {id:'ev_s3b',date:'2024-06-22',type:'3ヶ月定期評価',orthosis:'なし',aid:'なし',
+     values:{'tug-r':10.6,'tug-l':11.2,'10c':13.0,'10m':9.8,'frt':20.4,'5sts':14.8,'fact':23,'fmaue':50,'fmale':30,'grip-r':11.6,'grip-l':32.8,'wmft-fas':3.4,'wmft-t':28.6,'mal-aou':2.4,'mal-qom':2.2},
+     rawTrials:{},comment:'FMA-UE大幅改善。MALのAOU・QOMともに向上し日常生活での自発的使用が増えてきた。'},
+  ]);
+
+  toast('サンプルデータを3名分追加しました');
+  renderPtList();
+}
+
+// 初期化
+seedSampleData();
+renderPtList();
 </script>
 </body>
 </html>
