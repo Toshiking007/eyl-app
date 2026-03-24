@@ -157,21 +157,22 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
   .hdr,.nav,.content>*:not(#page-report){display:none!important}
   #page-report{display:block!important}
   .no-print{display:none!important}
-  body{background:#fff;font-size:11px}
+  body{background:#fff;font-size:10px;margin:0;padding:0}
+  @page{margin:10mm 12mm;size:A4}
   .pr-wrap{padding:0}
-  .pr-hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #028090;padding-bottom:10px;margin-bottom:14px}
-  .pr-logo{font-size:16px;font-weight:700;color:#028090}
-  .pr-logo span{font-size:10px;display:block;color:#5F5E5A;font-weight:400;margin-top:2px}
-  .pr-date{font-size:10px;color:#5F5E5A;text-align:right}
-  .pr-sec{margin-bottom:14px;page-break-inside:avoid}
-  .pr-sec h3{font-size:11px;font-weight:700;color:#028090;border-left:3px solid #028090;padding-left:7px;margin-bottom:7px}
-  .pr-tbl{width:100%;border-collapse:collapse;font-size:10px}
-  .pr-tbl th{background:#E1F5EE;color:#028090;padding:5px 7px;text-align:left;border:1px solid #D3D1C7}
-  .pr-tbl td{padding:5px 7px;border:1px solid #D3D1C7}
+  .pr-hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #028090;padding-bottom:8px;margin-bottom:10px}
+  .pr-logo{font-size:14px;font-weight:700;color:#028090}
+  .pr-logo span{font-size:9px;display:block;color:#5F5E5A;font-weight:400;margin-top:1px}
+  .pr-date{font-size:9px;color:#5F5E5A;text-align:right}
+  .pr-sec{margin-bottom:10px;page-break-inside:avoid}
+  .pr-sec h3{font-size:10px;font-weight:700;color:#028090;border-left:3px solid #028090;padding-left:6px;margin-bottom:5px}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:9px}
+  .pr-tbl th{background:#E1F5EE;color:#028090;padding:4px 6px;text-align:left;border:1px solid #D3D1C7}
+  .pr-tbl td{padding:4px 6px;border:1px solid #D3D1C7}
   .pr-tbl tr:nth-child(even) td{background:#F8F8F6}
-  .pr-comment{border:1px solid #D3D1C7;border-radius:5px;padding:10px;font-size:10px;line-height:1.7;min-height:70px;white-space:pre-wrap}
-  .pr-goal{border:1px solid #9FE1CB;border-radius:5px;padding:10px;font-size:10px;line-height:1.7;background:#E1F5EE}
-  .pr-foot{margin-top:20px;border-top:1px solid #D3D1C7;padding-top:7px;font-size:9px;color:#5F5E5A;display:flex;justify-content:space-between}
+  .pr-comment{border:1px solid #D3D1C7;border-radius:4px;padding:8px;font-size:9px;line-height:1.6;min-height:50px;white-space:pre-wrap}
+  .pr-goal{border:1px solid #9FE1CB;border-radius:4px;padding:7px;font-size:9px;line-height:1.6;background:#E1F5EE}
+  .pr-foot{margin-top:8px;border-top:1px solid #D3D1C7;padding-top:5px;font-size:8px;color:#5F5E5A;display:flex;justify-content:space-between}
   .chg-p{color:#1D9E75;font-weight:700}
   .chg-n{color:#D85A30;font-weight:700}
 }
@@ -241,13 +242,13 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
         <div class="ai-nm">TUG 右回り</div>
         <div class="dual"><input type="number" step="0.1" id="v-tug-r1" placeholder="1回目" oninput="calcAvg('tug-r')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-tug-r2" placeholder="2回目" oninput="calcAvg('tug-r')"></div>
         <div class="ai-avg" id="avg-tug-r"></div>
-        <div class="ai-u">平均値を保存</div>
+        <div class="ai-u">秒 / 平均値を保存</div>
       </div>
       <div class="ai basic">
         <div class="ai-nm">TUG 左回り</div>
         <div class="dual"><input type="number" step="0.1" id="v-tug-l1" placeholder="1回目" oninput="calcAvg('tug-l')"><div class="dual-sep">/</div><input type="number" step="0.1" id="v-tug-l2" placeholder="2回目" oninput="calcAvg('tug-l')"></div>
         <div class="ai-avg" id="avg-tug-l"></div>
-        <div class="ai-u">平均値を保存</div>
+        <div class="ai-u">秒 / 平均値を保存</div>
       </div>
     </div>
 
@@ -419,11 +420,49 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
 
 <!-- ══ EYL集計 ══ -->
 <div id="page-aggregate" class="page">
-  <div class="sl">EYL スタジオ全体データ</div>
+  <div class="sl">利用者概要</div>
   <div class="agg-grid" id="agg-stats"></div>
-  <div class="card"><div class="ch"><h2>指標別 平均改善量</h2></div><div class="cb"><div class="chart-wrap" style="height:190px"><canvas id="aggChart"></canvas></div></div></div>
-  <div class="card"><div class="ch"><h2>主訴別分布</h2></div><div class="cb"><div class="chart-wrap" style="height:170px"><canvas id="pieChart"></canvas></div></div></div>
-  <button class="btn btn-a" onclick="exportAllCSV()">全データCSV出力</button>
+
+  <div class="card"><div class="ch"><h2>基本属性</h2></div><div class="cb">
+    <div class="g2" style="gap:10px">
+      <div>
+        <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">年齢分布</div>
+        <div id="agg-age" style="font-size:13px;line-height:2"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">発症からの期間</div>
+        <div id="agg-months" style="font-size:13px;line-height:2"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">診断名・疾患</div>
+      <div id="agg-dx" style="font-size:13px;line-height:2"></div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">麻痺側</div>
+      <div id="agg-side" style="font-size:13px;line-height:2"></div>
+    </div>
+  </div></div>
+
+  <div class="card"><div class="ch">
+    <h2>指標別 平均改善量</h2>
+    <span style="font-size:10px;color:var(--sub)">初回→最終評価</span>
+  </div><div class="cb">
+    <p style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.6">全利用者の初回評価と最終評価を比較し、各指標が平均でどれだけ改善したかを示します。EYLの臨床成果の指標として活用できます。</p>
+    <div class="chart-wrap" style="height:200px"><canvas id="aggChart"></canvas></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><h2>主訴別・性別分布</h2></div><div class="cb">
+    <div class="g2">
+      <div><div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">主訴</div><div class="chart-wrap" style="height:160px"><canvas id="pieChart"></canvas></div></div>
+      <div><div style="font-size:10px;color:var(--sub);margin-bottom:6px;font-weight:600">性別</div><div class="chart-wrap" style="height:160px"><canvas id="sexChart"></canvas></div></div>
+    </div>
+  </div></div>
+
+  <div class="btn-row">
+    <button class="btn btn-a" onclick="exportAllCSV()">全データCSV</button>
+    <button class="btn btn-s" onclick="openModal('modal-backup')">バックアップ</button>
+  </div>
 </div>
 
 </div><!-- /content -->
@@ -473,6 +512,33 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
     <button class="btn btn-p" onclick="updatePatient()">保存する</button>
     <button class="btn btn-r" style="margin-top:7px" onclick="deletePatient()">この利用者を削除する</button>
     <button class="btn btn-s" style="margin-top:7px" onclick="closeModal(null,'modal-edit-pt')">キャンセル</button>
+  </div>
+</div>
+
+<!-- モーダル：保存済みレポート閲覧 -->
+<div class="mbg" id="modal-view-rpt" onclick="closeModal(event,'modal-view-rpt')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="view-rpt-title">保存済みレポート</h2>
+    <div id="view-rpt-body" style="max-height:60vh;overflow-y:auto"></div>
+    <button class="btn btn-s" style="margin-top:12px" onclick="closeModal(null,'modal-view-rpt')">閉じる</button>
+  </div>
+</div>
+
+<!-- モーダル：バックアップ -->
+<div class="mbg" id="modal-backup" onclick="closeModal(event,'modal-backup')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>データバックアップ</h2>
+    <p style="font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:14px">全データをJSONファイルとして書き出します。定期的に保存することをお勧めします。復元する場合はJSONファイルを読み込んでください。</p>
+    <button class="btn btn-p" onclick="exportBackup()">バックアップを書き出す（JSON）</button>
+    <div style="margin:14px 0;border-top:1px solid var(--border)"></div>
+    <p style="font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:10px">バックアップから復元する場合、<b style="color:var(--coral)">現在のデータはすべて上書きされます。</b></p>
+    <div class="fld"><label>バックアップファイルを選択（.json）</label>
+      <input type="file" id="backup-file" accept=".json" style="font-size:14px;padding:8px">
+    </div>
+    <button class="btn btn-r" onclick="importBackup()">選択したファイルから復元する</button>
+    <button class="btn btn-s" style="margin-top:7px" onclick="closeModal(null,'modal-backup')">キャンセル</button>
   </div>
 </div>
 
@@ -924,28 +990,125 @@ function saveReport(){
 function renderSavedRpts(){
   if(!curPtId) return;
   const rpts=DB.getRpts(curPtId);
+  const evs=DB.getEvs(curPtId);
   const el=document.getElementById('saved-rpt-list');
   if(!rpts.length){el.innerHTML='<div class="empty-msg">保存済みレポートがありません</div>';return;}
-  el.innerHTML=[...rpts].reverse().map((r,i)=>`
-    <div class="rpt-saved-item">
-      <div style="font-size:13px;font-weight:600">${r.savedAt} 作成</div>
+  el.innerHTML=[...rpts].reverse().map((r,idx)=>`
+    <div class="rpt-saved-item" onclick="viewSavedReport('${curPtId}','${r.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600">${r.savedAt} 作成</span>
+        <span style="font-size:11px;color:var(--teal)">▶ 開く</span>
+      </div>
       <div style="font-size:11px;color:var(--sub);margin-top:2px">比較期間：${r.before} → ${r.after}</div>
-      ${r.comment?`<div style="font-size:11px;color:var(--sub);margin-top:4px;font-style:italic">"${r.comment.slice(0,60)}${r.comment.length>60?'…':''}"</div>`:''}
+      ${r.comment?`<div style="font-size:11px;color:var(--sub);margin-top:4px;font-style:italic">"${r.comment.slice(0,80)}${r.comment.length>80?'…':''}"</div>`:''}
     </div>`).join('');
+}
+
+function viewSavedReport(ptId, rptId){
+  const pt=DB.getPts().find(p=>p.id===ptId);
+  const rpts=DB.getRpts(ptId);
+  const r=rpts.find(x=>x.id===rptId);
+  const evs=DB.getEvs(ptId);
+  if(!r||!pt) return;
+  const bev=evs.find(e=>e.date===r.before)||evs[0];
+  const aev=evs.find(e=>e.date===r.after)||evs[evs.length-1];
+  if(!bev||!aev) return;
+
+  document.getElementById('view-rpt-title').textContent=`${pt.name}　${r.savedAt} 作成`;
+  const rows=FIELDS.filter(f=>bev.values[f.id]!=null||aev.values[f.id]!=null).map(f=>{
+    const bv=bev.values[f.id]??'—',av=aev.values[f.id]??'—';
+    let chg='—',color='';
+    if(typeof bv==='number'&&typeof av==='number'){
+      const d=av-bv,imp=f.lower?d<0:d>0;
+      chg=(d>0?'+':'')+d.toFixed(1);color=imp?'color:#1D9E75;font-weight:600':'color:#D85A30;font-weight:600';
+    }
+    return `<tr><td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px">${f.label}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px;text-align:center">${bv}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px;text-align:center">${av}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px;text-align:center;${color}">${chg}</td></tr>`;
+  }).join('');
+
+  document.getElementById('view-rpt-body').innerHTML=`
+    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">比較期間：${r.before} → ${r.after}</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#E1F5EE">
+        <th style="padding:6px 8px;text-align:left;font-size:10px;color:#028090">評価項目</th>
+        <th style="padding:6px 8px;font-size:10px;color:#028090">Before</th>
+        <th style="padding:6px 8px;font-size:10px;color:#028090">After</th>
+        <th style="padding:6px 8px;font-size:10px;color:#028090">変化</th>
+      </tr>${rows}
+    </table>
+    ${r.comment?`<div style="margin-top:12px;padding:10px;background:#F8F8F6;border-radius:6px;font-size:12px;line-height:1.7;color:var(--text)">${r.comment}</div>`:''}`;
+  openModal('modal-view-rpt');
 }
 
 // ══════════════════════════════════════════════
 // EYL集計
 // ══════════════════════════════════════════════
+let sexChart=null;
 function renderAggregate(){
   const pts=DB.getPts();
   const totalEvs=pts.reduce((s,p)=>s+DB.getEvs(p.id).length,0);
   const chiefMap=pts.reduce((m,p)=>{m[p.chief]=(m[p.chief]||0)+1;return m},{});
+
+  // 概要カード
+  const ages=pts.map(p=>calcAge(p.dob)).filter(a=>a!=='—');
+  const avgAge=ages.length?(ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1):'—';
   document.getElementById('agg-stats').innerHTML=`
     <div class="agg-card"><div class="agg-val">${pts.length}</div><div class="agg-label">総利用者数</div></div>
     <div class="agg-card"><div class="agg-val">${totalEvs}</div><div class="agg-label">総評価件数</div></div>
-    ${Object.entries(chiefMap).map(([k,v])=>`<div class="agg-card"><div class="agg-val">${v}</div><div class="agg-label">${k}</div></div>`).join('')}`;
+    <div class="agg-card"><div class="agg-val">${avgAge}</div><div class="agg-label">平均年齢（歳）</div></div>
+    <div class="agg-card"><div class="agg-val">${pts.length?Math.round(pts.map(p=>calcMo(p.onset)).filter(m=>m!=='—').reduce((a,b)=>a+b,0)/pts.length):'—'}</div><div class="agg-label">平均発症後期間（ヶ月）</div></div>`;
 
+  // 年齢分布
+  const ageBands={'〜59歳':0,'60〜69歳':0,'70〜79歳':0,'80歳〜':0};
+  ages.forEach(a=>{
+    if(a<60) ageBands['〜59歳']++;
+    else if(a<70) ageBands['60〜69歳']++;
+    else if(a<80) ageBands['70〜79歳']++;
+    else ageBands['80歳〜']++;
+  });
+  document.getElementById('agg-age').innerHTML=
+    Object.entries(ageBands).filter(([,v])=>v>0).map(([k,v])=>
+      `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
+       <div style="height:12px;background:#5DCAA5;border-radius:3px;width:${v*30}px;min-width:4px"></div>
+       <span style="color:var(--sub)">${v}名</span></div>`
+    ).join('')||'<span style="color:var(--sub)">データなし</span>';
+
+  // 発症からの期間分布
+  const moList=pts.map(p=>calcMo(p.onset)).filter(m=>m!=='—');
+  const moBands={'6〜12ヶ月':0,'1〜2年':0,'2〜3年':0,'3年以上':0};
+  moList.forEach(m=>{
+    if(m<=12) moBands['6〜12ヶ月']++;
+    else if(m<=24) moBands['1〜2年']++;
+    else if(m<=36) moBands['2〜3年']++;
+    else moBands['3年以上']++;
+  });
+  document.getElementById('agg-months').innerHTML=
+    Object.entries(moBands).filter(([,v])=>v>0).map(([k,v])=>
+      `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
+       <div style="height:12px;background:#7F77DD;border-radius:3px;width:${v*30}px;min-width:4px"></div>
+       <span style="color:var(--sub)">${v}名</span></div>`
+    ).join('')||'<span style="color:var(--sub)">データなし</span>';
+
+  // 診断名
+  const dxMap=pts.reduce((m,p)=>{
+    const dx=(p.dx||'不明').split('（')[0].trim();
+    m[dx]=(m[dx]||0)+1;return m;
+  },{});
+  document.getElementById('agg-dx').innerHTML=
+    Object.entries(dxMap).map(([k,v])=>
+      `<span style="display:inline-block;background:var(--amber-l);color:var(--amber);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`
+    ).join('')||'<span style="color:var(--sub)">データなし</span>';
+
+  // 麻痺側
+  const sideMap=pts.reduce((m,p)=>{m[p.side||'不明']=(m[p.side||'不明']||0)+1;return m},{});
+  document.getElementById('agg-side').innerHTML=
+    Object.entries(sideMap).map(([k,v])=>
+      `<span style="display:inline-block;background:var(--teal-l);color:var(--teal);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`
+    ).join('')||'<span style="color:var(--sub)">データなし</span>';
+
+  // 改善量グラフ
   const imps={};
   FIELDS.forEach(f=>{
     const diffs=pts.map(p=>{
@@ -954,7 +1117,7 @@ function renderAggregate(){
       if(fv==null||lv==null) return null;
       return f.lower?fv-lv:lv-fv;
     }).filter(v=>v!=null);
-    if(diffs.length) imps[f.id]={label:f.label,avg:diffs.reduce((a,b)=>a+b,0)/diffs.length};
+    if(diffs.length) imps[f.id]={label:f.label,avg:diffs.reduce((a,b)=>a+b,0)/diffs.length,n:diffs.length};
   });
   const ie=Object.values(imps).filter(x=>x.avg>0).slice(0,8);
   if(aggChart) aggChart.destroy();
@@ -963,11 +1126,14 @@ function renderAggregate(){
       type:'bar',
       data:{labels:ie.map(x=>x.label.replace(/（.*）/,'')),
         datasets:[{label:'平均改善量',data:ie.map(x=>parseFloat(x.avg.toFixed(2))),
-          backgroundColor:'#5DCAA520',borderColor:'#028090',borderWidth:2,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+          backgroundColor:'#5DCAA530',borderColor:'#028090',borderWidth:2,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`平均 ${ctx.parsed.y} / ${ie[ctx.dataIndex].n}名のデータ`}}},
         scales:{y:{grid:{color:'#F1EFE8'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
   }
+
+  // 主訴円グラフ
   if(pieChart) pieChart.destroy();
   const pl=Object.keys(chiefMap),pv=Object.values(chiefMap);
   if(pl.length){
@@ -975,7 +1141,20 @@ function renderAggregate(){
       type:'doughnut',
       data:{labels:pl,datasets:[{data:pv,backgroundColor:['#7F77DD','#5DCAA5','#EF9F27'],borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'right',labels:{font:{size:11},padding:14}}}}
+        plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
+    });
+  }
+
+  // 性別円グラフ
+  if(sexChart) sexChart.destroy();
+  const sexMap=pts.reduce((m,p)=>{m[p.sex||'不明']=(m[p.sex||'不明']||0)+1;return m},{});
+  const sl=Object.keys(sexMap),sv=Object.values(sexMap);
+  if(sl.length){
+    sexChart=new Chart(document.getElementById('sexChart').getContext('2d'),{
+      type:'doughnut',
+      data:{labels:sl,datasets:[{data:sv,backgroundColor:['#85B7EB','#ED93B1','#B4B2A9'],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
     });
   }
 }
@@ -1003,8 +1182,45 @@ function dlCSV(rows,name){
 }
 
 // ══════════════════════════════════════════════
-// モーダル・トースト
+// バックアップ・リストア
 // ══════════════════════════════════════════════
+function exportBackup(){
+  const pts=DB.getPts();
+  const backup={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    patients:pts,
+    evals:Object.fromEntries(pts.map(p=>[p.id,DB.getEvs(p.id)])),
+    videos:Object.fromEntries(pts.map(p=>[p.id,DB.getVids(p.id)])),
+    reports:Object.fromEntries(pts.map(p=>[p.id,DB.getRpts(p.id)])),
+  };
+  const date=new Date().toISOString().slice(0,10);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
+  a.download=`EYL_バックアップ_${date}.json`;a.click();
+  toast('バックアップを書き出しました');
+}
+
+function importBackup(){
+  const file=document.getElementById('backup-file').files[0];
+  if(!file){toast('ファイルを選択してください');return;}
+  if(!confirm('現在の全データが上書きされます。本当に復元しますか？')) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const backup=JSON.parse(e.target.result);
+      if(!backup.patients) throw new Error('invalid');
+      DB.savePts(backup.patients);
+      Object.entries(backup.evals||{}).forEach(([id,d])=>DB.saveEvs(id,d));
+      Object.entries(backup.videos||{}).forEach(([id,d])=>DB.saveVids(id,d));
+      Object.entries(backup.reports||{}).forEach(([id,d])=>DB.saveRpts(id,d));
+      closeModal(null,'modal-backup');
+      renderPtList();
+      toast(`復元完了：${backup.patients.length}名のデータを読み込みました`);
+    }catch{toast('ファイルの形式が正しくありません');}
+  };
+  reader.readAsText(file);
+}
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(e,id){if(!e||e.target.classList.contains('mbg'))document.getElementById(id).classList.remove('open')}
 function toast(msg){
