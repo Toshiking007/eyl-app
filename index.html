@@ -328,15 +328,20 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
   </div></div>
 
   <div class="fld"><label>セラピストコメント</label><textarea id="v-comment" placeholder="介入内容・特記事項・利用者の様子など…"></textarea></div>
-  <button class="btn btn-p" onclick="saveAssessment()">評価を保存する</button>
+  <div id="edit-mode-bar" style="display:none;background:#FAEEDA;border-radius:6px;padding:9px 13px;margin-bottom:8px;font-size:12px;color:#BA7517;font-weight:600">
+    編集モード：<span id="edit-ev-label"></span>
+  </div>
+  <button class="btn btn-p" id="btn-save-assess" onclick="saveAssessment()">評価を保存する</button>
+  <button class="btn btn-s" style="margin-top:7px" onclick="copyPrevData()">前回値をコピー</button>
   <button class="btn btn-s" style="margin-top:7px" onclick="showPage('history')">記録・過去データを見る</button>
+  <button class="btn btn-r" id="btn-cancel-edit" style="display:none;margin-top:7px" onclick="cancelEditMode()">編集をキャンセル</button>
 </div>
 
 <!-- ══ 記録（数値＋コメント閲覧） ══ -->
 <div id="page-history" class="page">
   <div class="ibar">記録：<span id="hist-nm">—</span></div>
   <div class="card">
-    <div class="ch"><h2>評価履歴</h2></div>
+    <div class="ch"><h2>評価履歴</h2><span style="font-size:10px;color:var(--sub)">タップで編集・削除</span></div>
     <div class="cb" id="hist-list"><div class="empty-msg">評価データがありません</div></div>
   </div>
 </div>
@@ -516,7 +521,35 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
   </div>
 </div>
 
-<!-- モーダル：保存済みレポート閲覧 -->
+<!-- モーダル：レポート編集 -->
+<div class="mbg" id="modal-edit-rpt" onclick="closeModal(event,'modal-edit-rpt')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>レポートを編集</h2>
+    <input type="hidden" id="edit-rpt-id">
+    <div class="fld"><label>作成日</label><input type="date" id="edit-rpt-date"></div>
+    <div class="fld"><label>コメント・所見</label>
+      <textarea id="edit-rpt-comment" style="min-height:140px"></textarea>
+    </div>
+    <button class="btn btn-p" onclick="updateReport()">保存する</button>
+    <button class="btn btn-r" style="margin-top:7px" onclick="deleteReport()">このレポートを削除する</button>
+    <button class="btn btn-s" style="margin-top:7px" onclick="closeModal(null,'modal-edit-rpt')">キャンセル</button>
+  </div>
+</div>
+
+<!-- モーダル：評価編集確認 -->
+<div class="mbg" id="modal-edit-ev" onclick="closeModal(event,'modal-edit-ev')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="edit-ev-modal-title">評価データを編集</h2>
+    <p style="font-size:13px;color:var(--sub);line-height:1.7;margin-bottom:14px">
+      評価入力画面にこのデータを読み込みます。編集後「評価を保存する」で上書き保存されます。
+    </p>
+    <button class="btn btn-p" onclick="loadEvForEdit()">編集画面へ</button>
+    <button class="btn btn-r" style="margin-top:7px" onclick="deleteEvFromModal()">この評価を削除する</button>
+    <button class="btn btn-s" style="margin-top:7px" onclick="closeModal(null,'modal-edit-ev')">キャンセル</button>
+  </div>
+</div>
 <div class="mbg" id="modal-view-rpt" onclick="closeModal(event,'modal-view-rpt')">
   <div class="modal">
     <div class="mhandle"></div>
@@ -695,6 +728,8 @@ const FIELDS=[
 const DUAL_FIELDS=['tug-r','tug-l','10c','10m','frt','5sts'];
 
 let curPtId=null;
+let editingEvId=null;
+let editingEvForModal=null;
 let mainChart=null,aggChart=null,pieChart=null;
 const COLORS=['#028090','#534AB7','#BA7517','#D85A30','#1D9E75','#5DCAA5','#7F77DD','#EF9F27'];
 const PAGE_ORDER=['patients','assess','history','graph','video','report','aggregate'];
@@ -872,6 +907,54 @@ function clearAssessForm(){
     const el=document.getElementById('v-'+k);if(el) el.value='';
   });
   document.getElementById('v-comment').value='';
+  editingEvId=null;
+  document.getElementById('edit-mode-bar').style.display='none';
+  document.getElementById('btn-cancel-edit').style.display='none';
+  document.getElementById('btn-save-assess').textContent='評価を保存する';
+}
+
+function fillAssessForm(ev){
+  // 日付・種類・装具
+  document.getElementById('ev-date').value=ev.date||'';
+  document.getElementById('ev-type').value=ev.type||'初回評価';
+  document.getElementById('ev-orthosis').value=ev.orthosis||'なし';
+  document.getElementById('ev-aid').value=ev.aid||'なし';
+  // 2回計測フィールド（生データがあれば入れる、なければ平均値を1回目に）
+  DUAL_FIELDS.forEach(k=>{
+    const raw=ev.rawTrials?.[k];
+    const e1=document.getElementById('v-'+k+'1'),e2=document.getElementById('v-'+k+'2');
+    if(e1&&e2){
+      if(raw&&raw[0]) e1.value=raw[0];
+      else if(ev.values[k]!=null) e1.value=ev.values[k];
+      if(raw&&raw[1]) e2.value=raw[1];
+      calcAvg(k);
+    }
+  });
+  // 通常フィールド
+  ['fact','fmaue','fmale','grip-r','grip-l','arm-r','arm-l','thigh-r','thigh-l',
+   'wmft-fas','wmft-t','mal-aou','mal-qom','mas-u','mas-l','rom-sh','rom-ank'].forEach(k=>{
+    const el=document.getElementById('v-'+k);
+    if(el&&ev.values[k]!=null) el.value=ev.values[k];
+  });
+  document.getElementById('v-comment').value=ev.comment||'';
+}
+
+async function copyPrevData(){
+  if(!curPtId){toast('利用者を選択してください');return;}
+  const evs=await DB.getEvs(curPtId);
+  if(!evs.length){toast('過去の評価データがありません');return;}
+  const prev=evs[evs.length-1];
+  fillAssessForm(prev);
+  // 日付だけ今日にリセット
+  document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('ev-type').value='3ヶ月定期評価';
+  toast(`${prev.date} のデータをコピーしました`);
+}
+
+function cancelEditMode(){
+  clearAssessForm();
+  document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
+  toast('編集をキャンセルしました');
 }
 
 async function saveAssessment(){
@@ -891,18 +974,20 @@ async function saveAssessment(){
     const v2=document.getElementById('v-'+k+'2')?.value;
     if(v1||v2) rawTrials[k]=[v1||null,v2||null];
   });
+  const evId=editingEvId||'ev_'+Date.now();
   const ev={
-    id:'ev_'+Date.now(), date,
+    id:evId, date,
     type:document.getElementById('ev-type').value,
     orthosis:document.getElementById('ev-orthosis').value,
     aid:document.getElementById('ev-aid').value,
     values, rawTrials,
     comment:document.getElementById('v-comment').value,
   };
-  toast('保存中...');
+  toast(editingEvId?'更新中...':'保存中...');
   await DB.saveEv(curPtId,ev);
-  toast('評価を保存しました');
+  toast(editingEvId?'評価を更新しました':'評価を保存しました');
   clearAssessForm();
+  document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
   renderPtList();
 }
 
@@ -918,12 +1003,53 @@ async function renderHistory(){
       .map(f=>`<span class="ev-val">${f.label.replace(/（.*）/,'')}: <b>${ev.values[f.id]}</b></span>`).join('');
     const aid=ev.orthosis&&ev.orthosis!=='なし'?`装具:${ev.orthosis} `:'';
     const aidStr=aid+(ev.aid&&ev.aid!=='なし'?`補助具:${ev.aid}`:'');
-    return `<div class="ev-item">
-      <div><span class="ev-date">${ev.date}</span><span class="ev-type">${ev.type}</span>${aidStr?`<span style="font-size:10px;color:var(--amber);margin-left:6px">${aidStr}</span>`:''}</div>
+    return `<div class="ev-item" style="cursor:pointer" onclick="openEditEvModal('${ev.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><span class="ev-date">${ev.date}</span><span class="ev-type">${ev.type}</span>${aidStr?`<span style="font-size:10px;color:var(--amber);margin-left:6px">${aidStr}</span>`:''}</div>
+        <span style="font-size:11px;color:var(--teal)">✏️ 編集</span>
+      </div>
       <div class="ev-vals" style="margin-top:7px">${vals||'<span style="color:var(--sub);font-size:11px">数値の記録なし</span>'}</div>
       ${ev.comment?`<div class="ev-comment">"${ev.comment}"</div>`:''}
     </div>`;
   }).join('');
+}
+
+function openEditEvModal(evId){
+  DB.getEvs(curPtId).then(evs=>{
+    const ev=evs.find(e=>e.id===evId);
+    if(!ev) return;
+    editingEvForModal=ev;
+    document.getElementById('edit-ev-modal-title').textContent=`${ev.date}（${ev.type}）を編集`;
+    openModal('modal-edit-ev');
+  });
+}
+
+function loadEvForEdit(){
+  if(!editingEvForModal) return;
+  closeModal(null,'modal-edit-ev');
+  editingEvId=editingEvForModal.id;
+  fillAssessForm(editingEvForModal);
+  document.getElementById('edit-mode-bar').style.display='block';
+  document.getElementById('edit-ev-label').textContent=`${editingEvForModal.date}（${editingEvForModal.type}）`;
+  document.getElementById('btn-save-assess').textContent='この評価を上書き保存';
+  document.getElementById('btn-cancel-edit').style.display='block';
+  showPage('assess');
+  window.scrollTo(0,0);
+  toast('編集モードで読み込みました');
+}
+
+async function deleteEvFromModal(){
+  if(!editingEvForModal) return;
+  if(!confirm(`${editingEvForModal.date}の評価データを削除しますか？`)) return;
+  const evs=await DB.getEvs(curPtId);
+  const updated=evs.filter(e=>e.id!==editingEvForModal.id);
+  // Firestoreから削除
+  await db.collection('patients').doc(curPtId).collection('evals').doc(editingEvForModal.id).delete();
+  localStorage.setItem('eyl_ev_'+curPtId, JSON.stringify(updated));
+  closeModal(null,'modal-edit-ev');
+  editingEvForModal=null;
+  renderHistory();
+  toast('評価データを削除しました');
 }
 
 async function renderGraph(){
@@ -1085,14 +1211,57 @@ async function renderSavedRpts(){
   const el=document.getElementById('saved-rpt-list');
   if(!rpts.length){el.innerHTML='<div class="empty-msg">保存済みレポートがありません</div>';return;}
   el.innerHTML=rpts.map(r=>`
-    <div class="rpt-saved-item" onclick="viewSavedReport('${curPtId}','${r.id}')">
+    <div class="rpt-saved-item">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:13px;font-weight:600">${r.savedAt} 作成</span>
-        <span style="font-size:11px;color:var(--teal)">▶ 開く</span>
+        <div style="display:flex;gap:10px">
+          <span style="font-size:11px;color:var(--teal);cursor:pointer" onclick="viewSavedReport('${curPtId}','${r.id}')">▶ 開く</span>
+          <span style="font-size:11px;color:var(--amber);cursor:pointer" onclick="openEditRptModal('${r.id}')">✏️ 編集</span>
+        </div>
       </div>
       <div style="font-size:11px;color:var(--sub);margin-top:2px">比較期間：${r.before} → ${r.after}</div>
       ${r.comment?`<div style="font-size:11px;color:var(--sub);margin-top:4px;font-style:italic">"${r.comment.slice(0,80)}${r.comment.length>80?'…':''}"</div>`:''}
     </div>`).join('');
+}
+
+async function openEditRptModal(rptId){
+  const rpts=await DB.getRpts(curPtId);
+  const r=rpts.find(x=>x.id===rptId);
+  if(!r) return;
+  document.getElementById('edit-rpt-id').value=rptId;
+  document.getElementById('edit-rpt-date').value=r.savedAt||'';
+  document.getElementById('edit-rpt-comment').value=r.comment||'';
+  openModal('modal-edit-rpt');
+}
+
+async function updateReport(){
+  const rptId=document.getElementById('edit-rpt-id').value;
+  const rpts=await DB.getRpts(curPtId);
+  const r=rpts.find(x=>x.id===rptId);
+  if(!r) return;
+  const updated={...r,
+    savedAt:document.getElementById('edit-rpt-date').value,
+    comment:document.getElementById('edit-rpt-comment').value,
+  };
+  await db.collection('patients').doc(curPtId).collection('reports').doc(rptId).set(updated);
+  const cached=JSON.parse(localStorage.getItem('eyl_rpt_'+curPtId)||'[]');
+  const i=cached.findIndex(x=>x.id===rptId);
+  if(i>=0) cached[i]={id:rptId,...updated};
+  localStorage.setItem('eyl_rpt_'+curPtId,JSON.stringify(cached));
+  closeModal(null,'modal-edit-rpt');
+  renderSavedRpts();
+  toast('レポートを更新しました');
+}
+
+async function deleteReport(){
+  const rptId=document.getElementById('edit-rpt-id').value;
+  if(!confirm('このレポートを削除しますか？')) return;
+  await db.collection('patients').doc(curPtId).collection('reports').doc(rptId).delete();
+  const cached=JSON.parse(localStorage.getItem('eyl_rpt_'+curPtId)||'[]').filter(x=>x.id!==rptId);
+  localStorage.setItem('eyl_rpt_'+curPtId,JSON.stringify(cached));
+  closeModal(null,'modal-edit-rpt');
+  renderSavedRpts();
+  toast('レポートを削除しました');
 }
 
 async function viewSavedReport(ptId,rptId){
@@ -1329,7 +1498,11 @@ async function seedSampleData(){
 }
 
 // 初期化
-seedSampleData();
+async function init(){
+  await seedSampleData();
+  renderPtList();
+}
+init();
 </script>
 </body>
 </html>
