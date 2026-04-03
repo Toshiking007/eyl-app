@@ -1140,20 +1140,27 @@ async function delVid(vidId){
 // ══════════════════════════════════════════════
 async function renderReportPage(){
   if(!curPtId) return;
-  const evs=await DB.getEvs(curPtId);
+  // キャッシュ優先で即座に表示、バックグラウンドでFirestoreも確認
+  const evs=JSON.parse(localStorage.getItem('eyl_ev_'+curPtId)||'[]');
   const bSel=document.getElementById('rpt-before'),aSel=document.getElementById('rpt-after');
   bSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
   aSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
   if(evs.length>1) aSel.value=evs.length-1;
-  renderReport();renderSavedRpts();
+  renderReport();
+  renderSavedRpts();
+  // バックグラウンドでFirestoreを同期（次回以降に備える）
+  DB.getEvs(curPtId).then(()=>{});
 }
 
 async function renderReport(){
   if(!curPtId) return;
-  const evs=await DB.getEvs(curPtId);if(!evs.length) return;
+  // キャッシュから即座に取得
+  const evs=JSON.parse(localStorage.getItem('eyl_ev_'+curPtId)||'[]');
+  if(!evs.length) return;
   const bi=parseInt(document.getElementById('rpt-before').value)||0;
   const ai=parseInt(document.getElementById('rpt-after').value)||0;
   const bev=evs[bi],aev=evs[ai];
+  if(!bev||!aev) return;
   const rows=FIELDS.filter(f=>bev.values[f.id]!=null||aev.values[f.id]!=null).map(f=>{
     const bv=bev.values[f.id]??'—',av=aev.values[f.id]??'—';
     let chg='—',cls='chg-0';
@@ -1165,7 +1172,8 @@ async function renderReport(){
   }).join('');
   document.getElementById('rpt-preview').innerHTML=
     '<tr><th>評価項目</th><th>Before</th><th>After</th><th>変化</th></tr>'+rows;
-  const pts=await DB.getPts();
+  // キャッシュから利用者情報も取得
+  const pts=JSON.parse(localStorage.getItem('eyl_pts')||'[]');
   const pt=pts.find(p=>p.id===curPtId);
   const today=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   document.getElementById('pr-date-block').innerHTML=`作成日：${today}<br>報告期間：${bev.date} → ${aev.date}`;
@@ -1184,8 +1192,14 @@ async function renderReport(){
 }
 
 function printReport(){
+  // コメントをセット
   document.getElementById('pr-comment-print').textContent=
     document.getElementById('rpt-comment').value||'（コメントなし）';
+  // 印刷本体が空の場合は警告
+  const evalTable=document.getElementById('pr-eval');
+  if(!evalTable||!evalTable.innerHTML.includes('<tr>')){
+    toast('先に比較期間を設定してください');return;
+  }
   window.print();
 }
 
