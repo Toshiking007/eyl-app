@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>EYL 評価システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --teal:#028090;--teal-l:#E1F5EE;--teal-m:#5DCAA5;
@@ -548,15 +550,119 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo',sans-serif;background:va
 // ══════════════════════════════════════════════
 // DB（localStorage）
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// Firebase 初期化
+// ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCth1UO5JiqtwZ8KrH9VFzs3L5K0Q7dIZw",
+  authDomain: "eyl-assessment.firebaseapp.com",
+  projectId: "eyl-assessment",
+  storageBucket: "eyl-assessment.firebasestorage.app",
+  messagingSenderId: "301518944244",
+  appId: "1:301518944244:web:9b2d7a7d437ee344acaba1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ══════════════════════════════════════════════
+// DB層（Firestore + localStorageキャッシュ併用）
+// ══════════════════════════════════════════════
 const DB={
-  getPts(){return JSON.parse(localStorage.getItem('eyl_pts')||'[]')},
-  savePts(d){localStorage.setItem('eyl_pts',JSON.stringify(d))},
-  getEvs(id){return JSON.parse(localStorage.getItem('eyl_ev_'+id)||'[]')},
-  saveEvs(id,d){localStorage.setItem('eyl_ev_'+id,JSON.stringify(d))},
-  getVids(id){return JSON.parse(localStorage.getItem('eyl_vid_'+id)||'[]')},
-  saveVids(id,d){localStorage.setItem('eyl_vid_'+id,JSON.stringify(d))},
-  getRpts(id){return JSON.parse(localStorage.getItem('eyl_rpt_'+id)||'[]')},
-  saveRpts(id,d){localStorage.setItem('eyl_rpt_'+id,JSON.stringify(d))},
+  // ── 利用者 ──
+  async getPts(){
+    try{
+      const snap=await db.collection('patients').orderBy('createdAt').get();
+      const pts=snap.docs.map(d=>({id:d.id,...d.data()}));
+      localStorage.setItem('eyl_pts',JSON.stringify(pts));
+      return pts;
+    }catch{
+      return JSON.parse(localStorage.getItem('eyl_pts')||'[]');
+    }
+  },
+  async savePt(pt){
+    const {id,...data}=pt;
+    data.createdAt=data.createdAt||new Date().toISOString();
+    await db.collection('patients').doc(id).set(data);
+    const pts=JSON.parse(localStorage.getItem('eyl_pts')||'[]');
+    const i=pts.findIndex(p=>p.id===id);
+    if(i>=0) pts[i]=pt; else pts.push(pt);
+    localStorage.setItem('eyl_pts',JSON.stringify(pts));
+  },
+  async deletePt(id){
+    await db.collection('patients').doc(id).delete();
+    const evSnap=await db.collection('patients').doc(id).collection('evals').get();
+    evSnap.forEach(d=>d.ref.delete());
+    const vidSnap=await db.collection('patients').doc(id).collection('videos').get();
+    vidSnap.forEach(d=>d.ref.delete());
+    const rptSnap=await db.collection('patients').doc(id).collection('reports').get();
+    rptSnap.forEach(d=>d.ref.delete());
+    const pts=JSON.parse(localStorage.getItem('eyl_pts')||'[]').filter(p=>p.id!==id);
+    localStorage.setItem('eyl_pts',JSON.stringify(pts));
+    localStorage.removeItem('eyl_ev_'+id);
+    localStorage.removeItem('eyl_vid_'+id);
+    localStorage.removeItem('eyl_rpt_'+id);
+  },
+  // ── 評価 ──
+  async getEvs(ptId){
+    try{
+      const snap=await db.collection('patients').doc(ptId).collection('evals').orderBy('date').get();
+      const evs=snap.docs.map(d=>({id:d.id,...d.data()}));
+      localStorage.setItem('eyl_ev_'+ptId,JSON.stringify(evs));
+      return evs;
+    }catch{
+      return JSON.parse(localStorage.getItem('eyl_ev_'+ptId)||'[]');
+    }
+  },
+  async saveEv(ptId,ev){
+    const {id,...data}=ev;
+    await db.collection('patients').doc(ptId).collection('evals').doc(id).set(data);
+    const evs=JSON.parse(localStorage.getItem('eyl_ev_'+ptId)||'[]');
+    const i=evs.findIndex(e=>e.id===id);
+    if(i>=0) evs[i]=ev; else evs.push(ev);
+    evs.sort((a,b)=>a.date.localeCompare(b.date));
+    localStorage.setItem('eyl_ev_'+ptId,JSON.stringify(evs));
+  },
+  // ── 動画 ──
+  async getVids(ptId){
+    try{
+      const snap=await db.collection('patients').doc(ptId).collection('videos').orderBy('date','desc').get();
+      const vids=snap.docs.map(d=>({id:d.id,...d.data()}));
+      localStorage.setItem('eyl_vid_'+ptId,JSON.stringify(vids));
+      return vids;
+    }catch{
+      return JSON.parse(localStorage.getItem('eyl_vid_'+ptId)||'[]');
+    }
+  },
+  async saveVid(ptId,vid){
+    const ref=db.collection('patients').doc(ptId).collection('videos').doc();
+    await ref.set(vid);
+    const vids=JSON.parse(localStorage.getItem('eyl_vid_'+ptId)||'[]');
+    vids.unshift({id:ref.id,...vid});
+    localStorage.setItem('eyl_vid_'+ptId,JSON.stringify(vids));
+  },
+  async deleteVid(ptId,vidId){
+    await db.collection('patients').doc(ptId).collection('videos').doc(vidId).delete();
+    const vids=JSON.parse(localStorage.getItem('eyl_vid_'+ptId)||'[]').filter(v=>v.id!==vidId);
+    localStorage.setItem('eyl_vid_'+ptId,JSON.stringify(vids));
+  },
+  // ── レポート ──
+  async getRpts(ptId){
+    try{
+      const snap=await db.collection('patients').doc(ptId).collection('reports').orderBy('savedAt','desc').get();
+      const rpts=snap.docs.map(d=>({id:d.id,...d.data()}));
+      localStorage.setItem('eyl_rpt_'+ptId,JSON.stringify(rpts));
+      return rpts;
+    }catch{
+      return JSON.parse(localStorage.getItem('eyl_rpt_'+ptId)||'[]');
+    }
+  },
+  async saveRpt(ptId,rpt){
+    const ref=db.collection('patients').doc(ptId).collection('reports').doc();
+    await ref.set(rpt);
+    const rpts=JSON.parse(localStorage.getItem('eyl_rpt_'+ptId)||'[]');
+    rpts.unshift({id:ref.id,...rpt});
+    localStorage.setItem('eyl_rpt_'+ptId,JSON.stringify(rpts));
+  },
 };
 
 // 評価フィールド定義
@@ -648,12 +754,13 @@ function calcMo(onset){
   return (n.getFullYear()-o.getFullYear())*12+(n.getMonth()-o.getMonth());
 }
 
-function renderPtList(){
-  const pts=DB.getPts();
+async function renderPtList(){
+  const pts=await DB.getPts();
   const el=document.getElementById('pt-list');
   if(!pts.length){el.innerHTML='<div class="empty-msg">利用者が登録されていません<br>下のボタンから追加してください</div>';return;}
+  // 各利用者の最終評価日をキャッシュから取得
   el.innerHTML=pts.map(p=>{
-    const evs=DB.getEvs(p.id);
+    const evs=JSON.parse(localStorage.getItem('eyl_ev_'+p.id)||'[]');
     const last=evs.length?evs[evs.length-1].date:'未実施';
     const bc=p.chief==='上肢麻痺'?'badge-t':'badge-a';
     return `<div class="pt-item">
@@ -667,10 +774,9 @@ function renderPtList(){
   }).join('');
 }
 
-function saveNewPatient(){
+async function saveNewPatient(){
   const name=document.getElementById('np-name').value.trim();
   if(!name){toast('氏名を入力してください');return;}
-  const pts=DB.getPts();
   const pt={
     id:'pt_'+Date.now(), name,
     dob:document.getElementById('np-dob').value,
@@ -681,15 +787,18 @@ function saveNewPatient(){
     chief:document.getElementById('np-chief').value,
     dr:document.getElementById('np-dr').value,
     goal:document.getElementById('np-goal').value,
+    createdAt:new Date().toISOString(),
   };
-  pts.push(pt);DB.savePts(pts);
+  toast('登録中...');
+  await DB.savePt(pt);
   closeModal(null,'modal-new-pt');
   toast('利用者を登録しました');
   renderPtList();selectPt(pt.id);
 }
 
-function openEditPt(ptId){
-  const pt=DB.getPts().find(p=>p.id===ptId);
+async function openEditPt(ptId){
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===ptId);
   if(!pt) return;
   curPtId=ptId;
   document.getElementById('ep-name').value=pt.name||'';
@@ -704,11 +813,11 @@ function openEditPt(ptId){
   openModal('modal-edit-pt');
 }
 
-function updatePatient(){
-  const pts=DB.getPts();
-  const i=pts.findIndex(p=>p.id===curPtId);
-  if(i<0) return;
-  pts[i]={...pts[i],
+async function updatePatient(){
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===curPtId);
+  if(!pt) return;
+  const updated={...pt,
     name:document.getElementById('ep-name').value,
     dob:document.getElementById('ep-dob').value,
     sex:document.getElementById('ep-sex').value,
@@ -719,30 +828,32 @@ function updatePatient(){
     dr:document.getElementById('ep-dr').value,
     goal:document.getElementById('ep-goal').value,
   };
-  DB.savePts(pts);closeModal(null,'modal-edit-pt');
+  toast('更新中...');
+  await DB.savePt(updated);
+  closeModal(null,'modal-edit-pt');
   renderPtList();toast('利用者情報を更新しました');
 }
 
-function deletePatient(){
+async function deletePatient(){
   if(!confirm('この利用者と全評価データを削除しますか？')) return;
-  const pts=DB.getPts().filter(p=>p.id!==curPtId);
-  DB.savePts(pts);
-  localStorage.removeItem('eyl_ev_'+curPtId);
-  localStorage.removeItem('eyl_vid_'+curPtId);
-  localStorage.removeItem('eyl_rpt_'+curPtId);
+  toast('削除中...');
+  await DB.deletePt(curPtId);
   curPtId=null;closeModal(null,'modal-edit-pt');
   renderPtList();toast('利用者を削除しました');showPage('patients');
 }
 
-function selectPt(ptId){
+async function selectPt(ptId){
   curPtId=ptId;
-  const pt=DB.getPts().find(p=>p.id===ptId);
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===ptId);
   if(!pt) return;
   const nm=pt.name, sub=pt.side+'・'+pt.chief;
   ['assess-nm','graph-nm','vid-nm','rpt-nm','hist-nm'].forEach(id=>{
     const el=document.getElementById(id);if(el) el.textContent=nm;
   });
   document.getElementById('assess-sub').textContent=sub;
+  // 評価データを事前ロード
+  await DB.getEvs(ptId);
   clearAssessForm();
   document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
   showPage('assess');
@@ -764,31 +875,23 @@ function clearAssessForm(){
   document.getElementById('v-comment').value='';
 }
 
-function saveAssessment(){
+async function saveAssessment(){
   if(!curPtId){toast('利用者を選択してください');return;}
   const date=document.getElementById('ev-date').value;
   if(!date){toast('評価日を入力してください');return;}
-
   const values={};
-  // 2回計測フィールド（平均値を保存）
-  DUAL_FIELDS.forEach(k=>{
-    const avg=getDualAvg(k);
-    if(avg!=null) values[k]=avg;
-  });
-  // 通常フィールド
+  DUAL_FIELDS.forEach(k=>{const avg=getDualAvg(k);if(avg!=null) values[k]=avg;});
   ['fact','fmaue','fmale','grip-r','grip-l','arm-r','arm-l','thigh-r','thigh-l',
    'wmft-fas','wmft-t','mal-aou','mal-qom','mas-u','mas-l','rom-sh','rom-ank'].forEach(k=>{
     const el=document.getElementById('v-'+k);
     if(el&&el.value!=='') values[k]=parseFloat(el.value);
   });
-  // 生データ（2回分）も保存
   const rawTrials={};
   DUAL_FIELDS.forEach(k=>{
     const v1=document.getElementById('v-'+k+'1')?.value;
     const v2=document.getElementById('v-'+k+'2')?.value;
     if(v1||v2) rawTrials[k]=[v1||null,v2||null];
   });
-
   const ev={
     id:'ev_'+Date.now(), date,
     type:document.getElementById('ev-type').value,
@@ -797,27 +900,24 @@ function saveAssessment(){
     values, rawTrials,
     comment:document.getElementById('v-comment').value,
   };
-  const evs=DB.getEvs(curPtId);
-  evs.push(ev);evs.sort((a,b)=>a.date.localeCompare(b.date));
-  DB.saveEvs(curPtId,evs);
+  toast('保存中...');
+  await DB.saveEv(curPtId,ev);
   toast('評価を保存しました');
   clearAssessForm();
+  renderPtList();
 }
 
-// ══════════════════════════════════════════════
-// 記録閲覧（数値＋コメント）
-// ══════════════════════════════════════════════
-function renderHistory(){
+async function renderHistory(){
   if(!curPtId) return;
-  const evs=DB.getEvs(curPtId);
+  const evs=await DB.getEvs(curPtId);
+  const pts=await DB.getPts();
   const el=document.getElementById('hist-list');
-  document.getElementById('hist-nm').textContent=
-    DB.getPts().find(p=>p.id===curPtId)?.name||'—';
+  document.getElementById('hist-nm').textContent=pts.find(p=>p.id===curPtId)?.name||'—';
   if(!evs.length){el.innerHTML='<div class="empty-msg">評価データがありません</div>';return;}
   el.innerHTML=[...evs].reverse().map(ev=>{
     const vals=FIELDS.filter(f=>ev.values[f.id]!=null)
       .map(f=>`<span class="ev-val">${f.label.replace(/（.*）/,'')}: <b>${ev.values[f.id]}</b></span>`).join('');
-    const aid=ev.orthosis&&ev.orthosis!=='なし'?`装具:${ev.orthosis} `:'' ;
+    const aid=ev.orthosis&&ev.orthosis!=='なし'?`装具:${ev.orthosis} `:'';
     const aidStr=aid+(ev.aid&&ev.aid!=='なし'?`補助具:${ev.aid}`:'');
     return `<div class="ev-item">
       <div><span class="ev-date">${ev.date}</span><span class="ev-type">${ev.type}</span>${aidStr?`<span style="font-size:10px;color:var(--amber);margin-left:6px">${aidStr}</span>`:''}</div>
@@ -827,18 +927,13 @@ function renderHistory(){
   }).join('');
 }
 
-// ══════════════════════════════════════════════
-// グラフ
-// ══════════════════════════════════════════════
-function renderGraph(){
+async function renderGraph(){
   if(!curPtId){document.getElementById('graph-empty').style.display='block';document.getElementById('graph-content').style.display='none';return;}
-  const evs=DB.getEvs(curPtId);
+  const evs=await DB.getEvs(curPtId);
   if(!evs.length){document.getElementById('graph-empty').style.display='block';document.getElementById('graph-content').style.display='none';return;}
   document.getElementById('graph-empty').style.display='none';
   document.getElementById('graph-content').style.display='block';
-
   const activeF=FIELDS.filter(f=>evs.some(e=>e.values[f.id]!=null));
-  // stats上段3つ
   const sr=document.getElementById('stats-row');
   sr.innerHTML=activeF.slice(0,3).map(f=>{
     const vals=evs.map(e=>e.values[f.id]).filter(v=>v!=null);
@@ -847,7 +942,6 @@ function renderGraph(){
     return `<div class="sbox"><div class="sv">${vals[vals.length-1]}</div><div class="sl2">${f.label.replace(/（.*）/,'')}</div>
       <div class="sc" style="color:${imp?'var(--green)':'var(--coral)'}">${diff>0?'+':''}${diff.toFixed(1)}</div></div>`;
   }).join('');
-
   const pills=document.getElementById('cpills');
   pills.innerHTML=activeF.map((f,i)=>
     `<div class="cpill${i===0?' active':''}" onclick="switchChart('${f.id}',this)">${f.label.replace(/（.*）/,'')}</div>`
@@ -873,56 +967,55 @@ function drawChart(evs,field){
   });
 }
 
-function switchChart(fid,el){
+async function switchChart(fid,el){
   document.querySelectorAll('.cpill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  const evs=DB.getEvs(curPtId);
+  const evs=await DB.getEvs(curPtId);
   drawChart(evs,FIELDS.find(f=>f.id===fid));
 }
 
 // ══════════════════════════════════════════════
 // 動画
 // ══════════════════════════════════════════════
-function renderVidList(){
+async function renderVidList(){
   if(!curPtId) return;
-  const vids=DB.getVids(curPtId);
+  const vids=await DB.getVids(curPtId);
   const el=document.getElementById('vid-list');
   if(!vids.length){el.innerHTML='<div class="empty-msg">動画がありません</div>';return;}
-  el.innerHTML=vids.map((v,i)=>`<div class="vi">
+  el.innerHTML=vids.map(v=>`<div class="vi">
     <div class="vt">▶</div>
     <div class="vi-info">
       <div class="vi-title"><a href="${v.url}" target="_blank" style="color:var(--teal);text-decoration:none">${v.type}</a></div>
       <div class="vi-meta">${v.date}　${v.memo||''}</div>
     </div>
-    <button class="icon-btn" onclick="delVid(${i})" style="color:var(--coral)">×</button>
+    <button class="icon-btn" onclick="delVid('${v.id}')" style="color:var(--coral)">×</button>
   </div>`).join('');
   document.getElementById('vid-date').value=new Date().toISOString().split('T')[0];
 }
 
-function saveVideo(){
+async function saveVideo(){
   if(!curPtId){toast('利用者を選択してください');return;}
   const url=document.getElementById('vid-url').value.trim();
   if(!url){toast('URLを入力してください');return;}
-  const vids=DB.getVids(curPtId);
-  vids.push({type:document.getElementById('vid-type').value,
+  const vid={type:document.getElementById('vid-type').value,
     date:document.getElementById('vid-date').value,url,
-    memo:document.getElementById('vid-memo').value});
-  DB.saveVids(curPtId,vids);
+    memo:document.getElementById('vid-memo').value};
+  toast('保存中...');
+  await DB.saveVid(curPtId,vid);
   document.getElementById('vid-url').value='';document.getElementById('vid-memo').value='';
   renderVidList();toast('動画リンクを保存しました');
 }
 
-function delVid(i){
-  const vids=DB.getVids(curPtId);vids.splice(i,1);
-  DB.saveVids(curPtId,vids);renderVidList();
+async function delVid(vidId){
+  await DB.deleteVid(curPtId,vidId);renderVidList();
 }
 
 // ══════════════════════════════════════════════
 // Dr.レポート
 // ══════════════════════════════════════════════
-function renderReportPage(){
+async function renderReportPage(){
   if(!curPtId) return;
-  const evs=DB.getEvs(curPtId);
+  const evs=await DB.getEvs(curPtId);
   const bSel=document.getElementById('rpt-before'),aSel=document.getElementById('rpt-after');
   bSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
   aSel.innerHTML=evs.map((e,i)=>`<option value="${i}">${e.date}（${e.type}）</option>`).join('');
@@ -930,9 +1023,9 @@ function renderReportPage(){
   renderReport();renderSavedRpts();
 }
 
-function renderReport(){
+async function renderReport(){
   if(!curPtId) return;
-  const evs=DB.getEvs(curPtId);if(!evs.length) return;
+  const evs=await DB.getEvs(curPtId);if(!evs.length) return;
   const bi=parseInt(document.getElementById('rpt-before').value)||0;
   const ai=parseInt(document.getElementById('rpt-after').value)||0;
   const bev=evs[bi],aev=evs[ai];
@@ -947,9 +1040,8 @@ function renderReport(){
   }).join('');
   document.getElementById('rpt-preview').innerHTML=
     '<tr><th>評価項目</th><th>Before</th><th>After</th><th>変化</th></tr>'+rows;
-
-  // 印刷用更新
-  const pt=DB.getPts().find(p=>p.id===curPtId);
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===curPtId);
   const today=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   document.getElementById('pr-date-block').innerHTML=`作成日：${today}<br>報告期間：${bev.date} → ${aev.date}`;
   document.getElementById('pr-foot-date').textContent=today;
@@ -972,28 +1064,28 @@ function printReport(){
   window.print();
 }
 
-function saveReport(){
+async function saveReport(){
   if(!curPtId) return;
-  const evs=DB.getEvs(curPtId);if(!evs.length) return;
+  const evs=await DB.getEvs(curPtId);if(!evs.length) return;
   const bi=parseInt(document.getElementById('rpt-before').value)||0;
   const ai=parseInt(document.getElementById('rpt-after').value)||0;
-  const rpts=DB.getRpts(curPtId);
-  rpts.push({
-    id:'rpt_'+Date.now(),
+  const rpt={
     savedAt:new Date().toISOString().split('T')[0],
-    before:evs[bi].date,after:evs[evs.length>1?ai:0].date,
+    before:evs[bi].date,
+    after:evs[evs.length>1?ai:0].date,
     comment:document.getElementById('rpt-comment').value,
-  });
-  DB.saveRpts(curPtId,rpts);renderSavedRpts();toast('レポートを保存しました');
+  };
+  toast('保存中...');
+  await DB.saveRpt(curPtId,rpt);
+  renderSavedRpts();toast('レポートを保存しました');
 }
 
-function renderSavedRpts(){
+async function renderSavedRpts(){
   if(!curPtId) return;
-  const rpts=DB.getRpts(curPtId);
-  const evs=DB.getEvs(curPtId);
+  const rpts=await DB.getRpts(curPtId);
   const el=document.getElementById('saved-rpt-list');
   if(!rpts.length){el.innerHTML='<div class="empty-msg">保存済みレポートがありません</div>';return;}
-  el.innerHTML=[...rpts].reverse().map((r,idx)=>`
+  el.innerHTML=rpts.map(r=>`
     <div class="rpt-saved-item" onclick="viewSavedReport('${curPtId}','${r.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:13px;font-weight:600">${r.savedAt} 作成</span>
@@ -1004,16 +1096,16 @@ function renderSavedRpts(){
     </div>`).join('');
 }
 
-function viewSavedReport(ptId, rptId){
-  const pt=DB.getPts().find(p=>p.id===ptId);
-  const rpts=DB.getRpts(ptId);
+async function viewSavedReport(ptId,rptId){
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===ptId);
+  const rpts=await DB.getRpts(ptId);
   const r=rpts.find(x=>x.id===rptId);
-  const evs=DB.getEvs(ptId);
+  const evs=await DB.getEvs(ptId);
   if(!r||!pt) return;
   const bev=evs.find(e=>e.date===r.before)||evs[0];
   const aev=evs.find(e=>e.date===r.after)||evs[evs.length-1];
   if(!bev||!aev) return;
-
   document.getElementById('view-rpt-title').textContent=`${pt.name}　${r.savedAt} 作成`;
   const rows=FIELDS.filter(f=>bev.values[f.id]!=null||aev.values[f.id]!=null).map(f=>{
     const bv=bev.values[f.id]??'—',av=aev.values[f.id]??'—';
@@ -1027,7 +1119,6 @@ function viewSavedReport(ptId, rptId){
       <td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px;text-align:center">${av}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #F1EFE8;font-size:12px;text-align:center;${color}">${chg}</td></tr>`;
   }).join('');
-
   document.getElementById('view-rpt-body').innerHTML=`
     <div style="font-size:11px;color:var(--sub);margin-bottom:10px">比較期間：${r.before} → ${r.after}</div>
     <table style="width:100%;border-collapse:collapse">
@@ -1046,80 +1137,50 @@ function viewSavedReport(ptId, rptId){
 // EYL集計
 // ══════════════════════════════════════════════
 let sexChart=null;
-function renderAggregate(){
-  const pts=DB.getPts();
-  const totalEvs=pts.reduce((s,p)=>s+DB.getEvs(p.id).length,0);
+async function renderAggregate(){
+  const pts=await DB.getPts();
+  const totalEvs=pts.reduce((s,p)=>s+JSON.parse(localStorage.getItem('eyl_ev_'+p.id)||'[]').length,0);
   const chiefMap=pts.reduce((m,p)=>{m[p.chief]=(m[p.chief]||0)+1;return m},{});
-
-  // 概要カード
   const ages=pts.map(p=>calcAge(p.dob)).filter(a=>a!=='—');
   const avgAge=ages.length?(ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1):'—';
+  const moList=pts.map(p=>calcMo(p.onset)).filter(m=>m!=='—');
   document.getElementById('agg-stats').innerHTML=`
     <div class="agg-card"><div class="agg-val">${pts.length}</div><div class="agg-label">総利用者数</div></div>
     <div class="agg-card"><div class="agg-val">${totalEvs}</div><div class="agg-label">総評価件数</div></div>
     <div class="agg-card"><div class="agg-val">${avgAge}</div><div class="agg-label">平均年齢（歳）</div></div>
-    <div class="agg-card"><div class="agg-val">${pts.length?Math.round(pts.map(p=>calcMo(p.onset)).filter(m=>m!=='—').reduce((a,b)=>a+b,0)/pts.length):'—'}</div><div class="agg-label">平均発症後期間（ヶ月）</div></div>`;
-
-  // 年齢分布
+    <div class="agg-card"><div class="agg-val">${moList.length?Math.round(moList.reduce((a,b)=>a+b,0)/moList.length):'—'}</div><div class="agg-label">平均発症後期間（ヶ月）</div></div>`;
   const ageBands={'〜59歳':0,'60〜69歳':0,'70〜79歳':0,'80歳〜':0};
-  ages.forEach(a=>{
-    if(a<60) ageBands['〜59歳']++;
-    else if(a<70) ageBands['60〜69歳']++;
-    else if(a<80) ageBands['70〜79歳']++;
-    else ageBands['80歳〜']++;
-  });
-  document.getElementById('agg-age').innerHTML=
-    Object.entries(ageBands).filter(([,v])=>v>0).map(([k,v])=>
-      `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
-       <div style="height:12px;background:#5DCAA5;border-radius:3px;width:${v*30}px;min-width:4px"></div>
-       <span style="color:var(--sub)">${v}名</span></div>`
-    ).join('')||'<span style="color:var(--sub)">データなし</span>';
-
-  // 発症からの期間分布
-  const moList=pts.map(p=>calcMo(p.onset)).filter(m=>m!=='—');
+  ages.forEach(a=>{if(a<60)ageBands['〜59歳']++;else if(a<70)ageBands['60〜69歳']++;else if(a<80)ageBands['70〜79歳']++;else ageBands['80歳〜']++;});
+  document.getElementById('agg-age').innerHTML=Object.entries(ageBands).filter(([,v])=>v>0).map(([k,v])=>
+    `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
+     <div style="height:12px;background:#5DCAA5;border-radius:3px;width:${v*30}px;min-width:4px"></div>
+     <span style="color:var(--sub)">${v}名</span></div>`).join('')||'<span style="color:var(--sub)">データなし</span>';
   const moBands={'6〜12ヶ月':0,'1〜2年':0,'2〜3年':0,'3年以上':0};
-  moList.forEach(m=>{
-    if(m<=12) moBands['6〜12ヶ月']++;
-    else if(m<=24) moBands['1〜2年']++;
-    else if(m<=36) moBands['2〜3年']++;
-    else moBands['3年以上']++;
-  });
-  document.getElementById('agg-months').innerHTML=
-    Object.entries(moBands).filter(([,v])=>v>0).map(([k,v])=>
-      `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
-       <div style="height:12px;background:#7F77DD;border-radius:3px;width:${v*30}px;min-width:4px"></div>
-       <span style="color:var(--sub)">${v}名</span></div>`
-    ).join('')||'<span style="color:var(--sub)">データなし</span>';
-
-  // 診断名
-  const dxMap=pts.reduce((m,p)=>{
-    const dx=(p.dx||'不明').split('（')[0].trim();
-    m[dx]=(m[dx]||0)+1;return m;
-  },{});
-  document.getElementById('agg-dx').innerHTML=
-    Object.entries(dxMap).map(([k,v])=>
-      `<span style="display:inline-block;background:var(--amber-l);color:var(--amber);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`
-    ).join('')||'<span style="color:var(--sub)">データなし</span>';
-
-  // 麻痺側
+  moList.forEach(m=>{if(m<=12)moBands['6〜12ヶ月']++;else if(m<=24)moBands['1〜2年']++;else if(m<=36)moBands['2〜3年']++;else moBands['3年以上']++;});
+  document.getElementById('agg-months').innerHTML=Object.entries(moBands).filter(([,v])=>v>0).map(([k,v])=>
+    `<div style="display:flex;align-items:center;gap:8px"><span style="width:72px">${k}</span>
+     <div style="height:12px;background:#7F77DD;border-radius:3px;width:${v*30}px;min-width:4px"></div>
+     <span style="color:var(--sub)">${v}名</span></div>`).join('')||'<span style="color:var(--sub)">データなし</span>';
+  const dxMap=pts.reduce((m,p)=>{const dx=(p.dx||'不明').split('（')[0].trim();m[dx]=(m[dx]||0)+1;return m},{});
+  document.getElementById('agg-dx').innerHTML=Object.entries(dxMap).map(([k,v])=>
+    `<span style="display:inline-block;background:var(--amber-l);color:var(--amber);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`).join('')||'<span style="color:var(--sub)">データなし</span>';
   const sideMap=pts.reduce((m,p)=>{m[p.side||'不明']=(m[p.side||'不明']||0)+1;return m},{});
-  document.getElementById('agg-side').innerHTML=
-    Object.entries(sideMap).map(([k,v])=>
-      `<span style="display:inline-block;background:var(--teal-l);color:var(--teal);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`
-    ).join('')||'<span style="color:var(--sub)">データなし</span>';
-
+  document.getElementById('agg-side').innerHTML=Object.entries(sideMap).map(([k,v])=>
+    `<span style="display:inline-block;background:var(--teal-l);color:var(--teal);padding:2px 10px;border-radius:12px;font-size:12px;margin:2px">${k} ${v}名</span>`).join('')||'<span style="color:var(--sub)">データなし</span>';
   // 改善量グラフ
   const imps={};
-  FIELDS.forEach(f=>{
-    const diffs=pts.map(p=>{
-      const ev=DB.getEvs(p.id);if(ev.length<2) return null;
-      const fv=ev[0].values[f.id],lv=ev[ev.length-1].values[f.id];
-      if(fv==null||lv==null) return null;
-      return f.lower?fv-lv:lv-fv;
-    }).filter(v=>v!=null);
-    if(diffs.length) imps[f.id]={label:f.label,avg:diffs.reduce((a,b)=>a+b,0)/diffs.length,n:diffs.length};
-  });
-  const ie=Object.values(imps).filter(x=>x.avg>0).slice(0,8);
+  for(const p of pts){
+    const evs=await DB.getEvs(p.id);
+    if(evs.length<2) continue;
+    FIELDS.forEach(f=>{
+      const fv=evs[0].values[f.id],lv=evs[evs.length-1].values[f.id];
+      if(fv==null||lv==null) return;
+      const d=f.lower?fv-lv:lv-fv;
+      if(!imps[f.id]) imps[f.id]={label:f.label,diffs:[],n:0};
+      imps[f.id].diffs.push(d);imps[f.id].n++;
+    });
+  }
+  const ie=Object.values(imps).map(x=>({...x,avg:x.diffs.reduce((a,b)=>a+b,0)/x.n})).filter(x=>x.avg>0).slice(0,8);
   if(aggChart) aggChart.destroy();
   if(ie.length){
     aggChart=new Chart(document.getElementById('aggChart').getContext('2d'),{
@@ -1128,33 +1189,26 @@ function renderAggregate(){
         datasets:[{label:'平均改善量',data:ie.map(x=>parseFloat(x.avg.toFixed(2))),
           backgroundColor:'#5DCAA530',borderColor:'#028090',borderWidth:2,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>`平均 ${ctx.parsed.y} / ${ie[ctx.dataIndex].n}名のデータ`}}},
+        tooltip:{callbacks:{label:ctx=>`平均 ${ctx.parsed.y} / ${ie[ctx.dataIndex].n}名`}}},
         scales:{y:{grid:{color:'#F1EFE8'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
   }
-
-  // 主訴円グラフ
   if(pieChart) pieChart.destroy();
   const pl=Object.keys(chiefMap),pv=Object.values(chiefMap);
   if(pl.length){
     pieChart=new Chart(document.getElementById('pieChart').getContext('2d'),{
       type:'doughnut',
       data:{labels:pl,datasets:[{data:pv,backgroundColor:['#7F77DD','#5DCAA5','#EF9F27'],borderWidth:0}]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
     });
   }
-
-  // 性別円グラフ
   if(sexChart) sexChart.destroy();
-  const sexMap=pts.reduce((m,p)=>{m[p.sex||'不明']=(m[p.sex||'不明']||0)+1;return m},{});
-  const sl=Object.keys(sexMap),sv=Object.values(sexMap);
+  const sl=Object.keys(sideMap),sv=Object.values(sideMap);
   if(sl.length){
     sexChart=new Chart(document.getElementById('sexChart').getContext('2d'),{
       type:'doughnut',
       data:{labels:sl,datasets:[{data:sv,backgroundColor:['#85B7EB','#ED93B1','#B4B2A9'],borderWidth:0}]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10}}}}
     });
   }
 }
@@ -1162,17 +1216,23 @@ function renderAggregate(){
 // ══════════════════════════════════════════════
 // CSV
 // ══════════════════════════════════════════════
-function exportCSV(){
+async function exportCSV(){
   if(!curPtId){toast('利用者を選択してください');return;}
-  const pt=DB.getPts().find(p=>p.id===curPtId);
-  const evs=DB.getEvs(curPtId);
+  const pts=await DB.getPts();
+  const pt=pts.find(p=>p.id===curPtId);
+  const evs=await DB.getEvs(curPtId);
   const hdr=['氏名','評価日','種類','装具','歩行補助具',...FIELDS.map(f=>f.label),'コメント'];
   const rows=evs.map(e=>[pt.name,e.date,e.type,e.orthosis||'',e.aid||'',...FIELDS.map(f=>e.values[f.id]??''),e.comment||'']);
   dlCSV([hdr,...rows],`EYL_${pt.name}_評価データ.csv`);
 }
-function exportAllCSV(){
+async function exportAllCSV(){
+  const pts=await DB.getPts();
   const hdr=['氏名','評価日','種類','装具','歩行補助具',...FIELDS.map(f=>f.label)];
-  const rows=DB.getPts().flatMap(pt=>DB.getEvs(pt.id).map(e=>[pt.name,e.date,e.type,e.orthosis||'',e.aid||'',...FIELDS.map(f=>e.values[f.id]??'')]));
+  const rows=[];
+  for(const pt of pts){
+    const evs=await DB.getEvs(pt.id);
+    evs.forEach(e=>rows.push([pt.name,e.date,e.type,e.orthosis||'',e.aid||'',...FIELDS.map(f=>e.values[f.id]??'')]));
+  }
   dlCSV([hdr,...rows],'EYL_全データ.csv');
 }
 function dlCSV(rows,name){
@@ -1184,16 +1244,15 @@ function dlCSV(rows,name){
 // ══════════════════════════════════════════════
 // バックアップ・リストア
 // ══════════════════════════════════════════════
-function exportBackup(){
-  const pts=DB.getPts();
-  const backup={
-    version:1,
-    exportedAt:new Date().toISOString(),
-    patients:pts,
-    evals:Object.fromEntries(pts.map(p=>[p.id,DB.getEvs(p.id)])),
-    videos:Object.fromEntries(pts.map(p=>[p.id,DB.getVids(p.id)])),
-    reports:Object.fromEntries(pts.map(p=>[p.id,DB.getRpts(p.id)])),
-  };
+async function exportBackup(){
+  const pts=await DB.getPts();
+  const evals={},videos={},reports={};
+  for(const p of pts){
+    evals[p.id]=await DB.getEvs(p.id);
+    videos[p.id]=await DB.getVids(p.id);
+    reports[p.id]=await DB.getRpts(p.id);
+  }
+  const backup={version:2,exportedAt:new Date().toISOString(),patients:pts,evals,videos,reports};
   const date=new Date().toISOString().slice(0,10);
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
@@ -1201,19 +1260,23 @@ function exportBackup(){
   toast('バックアップを書き出しました');
 }
 
-function importBackup(){
+async function importBackup(){
   const file=document.getElementById('backup-file').files[0];
   if(!file){toast('ファイルを選択してください');return;}
   if(!confirm('現在の全データが上書きされます。本当に復元しますか？')) return;
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     try{
       const backup=JSON.parse(e.target.result);
       if(!backup.patients) throw new Error('invalid');
-      DB.savePts(backup.patients);
-      Object.entries(backup.evals||{}).forEach(([id,d])=>DB.saveEvs(id,d));
-      Object.entries(backup.videos||{}).forEach(([id,d])=>DB.saveVids(id,d));
-      Object.entries(backup.reports||{}).forEach(([id,d])=>DB.saveRpts(id,d));
+      toast('復元中...');
+      for(const pt of backup.patients) await DB.savePt(pt);
+      for(const [id,evs] of Object.entries(backup.evals||{}))
+        for(const ev of evs) await DB.saveEv(id,ev);
+      for(const [id,vids] of Object.entries(backup.videos||{}))
+        for(const vid of vids) await DB.saveVid(id,vid);
+      for(const [id,rpts] of Object.entries(backup.reports||{}))
+        for(const rpt of rpts) await DB.saveRpt(id,rpt);
       closeModal(null,'modal-backup');
       renderPtList();
       toast(`復元完了：${backup.patients.length}名のデータを読み込みました`);
@@ -1221,6 +1284,10 @@ function importBackup(){
   };
   reader.readAsText(file);
 }
+
+// ══════════════════════════════════════════════
+// モーダル・トースト
+// ══════════════════════════════════════════════
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(e,id){if(!e||e.target.classList.contains('mbg'))document.getElementById(id).classList.remove('open')}
 function toast(msg){
@@ -1229,58 +1296,41 @@ function toast(msg){
 }
 
 // ══════════════════════════════════════════════
-// サンプルデータ（初回のみ投入）
+// サンプルデータ（Firestoreに未登録の場合のみ）
 // ══════════════════════════════════════════════
-function seedSampleData(){
-  if(DB.getPts().length>0) return;
-  const pts=[
-    {id:'pt_s1',name:'田中 義雄',dob:'1956-04-12',sex:'男性',dx:'脳梗塞（左中大脳動脈領域）',onset:'2022-11',side:'右片麻痺',chief:'上肢＋歩行',dr:'久留米大学病院 山本先生',goal:'T字杖使用にて屋外歩行自立、患側上肢を食事動作に補助的に使用できる'},
-    {id:'pt_s2',name:'山田 花子',dob:'1952-08-23',sex:'女性',dx:'脳出血（右被殻）',onset:'2023-09',side:'左片麻痺',chief:'歩行障害',dr:'聖マリア病院 田中先生',goal:'屋内歩行を歩行補助具なしで自立、階段の昇降が可能になる'},
-    {id:'pt_s3',name:'鈴木 一郎',dob:'1963-01-07',sex:'男性',dx:'脳梗塞（右中大脳動脈領域）',onset:'2021-05',side:'左片麻痺',chief:'上肢麻痺',dr:'福岡記念病院 佐藤先生',goal:'患側上肢でのリーチ動作改善、MAL-AOU 2.0点以上を目指す'},
+async function seedSampleData(){
+  const pts=await DB.getPts();
+  if(pts.length>0) return;
+  const samplePts=[
+    {id:'pt_s1',name:'田中 義雄',dob:'1956-04-12',sex:'男性',dx:'脳梗塞（左中大脳動脈領域）',onset:'2022-11',side:'右片麻痺',chief:'上肢＋歩行',dr:'久留米大学病院 山本先生',goal:'T字杖使用にて屋外歩行自立、患側上肢を食事動作に補助的に使用できる',createdAt:'2024-04-01T00:00:00Z'},
+    {id:'pt_s2',name:'山田 花子',dob:'1952-08-23',sex:'女性',dx:'脳出血（右被殻）',onset:'2023-09',side:'左片麻痺',chief:'歩行障害',dr:'聖マリア病院 田中先生',goal:'屋内歩行を補助具なしで自立、階段昇降が可能になる',createdAt:'2024-06-01T00:00:00Z'},
+    {id:'pt_s3',name:'鈴木 一郎',dob:'1963-01-07',sex:'男性',dx:'脳梗塞（右中大脳動脈領域）',onset:'2021-05',side:'左片麻痺',chief:'上肢麻痺',dr:'福岡記念病院 佐藤先生',goal:'患側上肢でのリーチ動作改善、MAL-AOU 2.0点以上',createdAt:'2024-03-01T00:00:00Z'},
   ];
-  DB.savePts(pts);
-
-  // 田中さん（3回分の評価）
-  DB.saveEvs('pt_s1',[
-    {id:'ev_s1a',date:'2024-04-10',type:'初回評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',
-     values:{'tug-r':18.4,'tug-l':20.1,'10c':22.6,'10m':17.2,'frt':9.5,'5sts':28.4,'fact':14,'fmaue':38,'fmale':18,'grip-r':22.1,'grip-l':7.4,'arm-r':27.2,'arm-l':24.8,'thigh-r':42.1,'thigh-l':39.4},
-     rawTrials:{'tug-r':['18.2','18.6'],'tug-l':['20.4','19.8'],'10c':['23.1','22.1'],'10m':['17.5','16.9'],'frt':['9.0','10.0'],'5sts':['28.8','28.0']},
-     comment:'初回評価。体幹の代償が強く上肢・歩行ともに著明な制限あり。'},
-    {id:'ev_s1b',date:'2024-07-12',type:'3ヶ月定期評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',
-     values:{'tug-r':15.8,'tug-l':17.2,'10c':18.9,'10m':14.4,'frt':13.2,'5sts':23.6,'fact':18,'fmaue':44,'fmale':22,'grip-r':22.4,'grip-l':9.8,'arm-r':27.4,'arm-l':25.6,'thigh-r':42.5,'thigh-l':40.2},
-     rawTrials:{},comment:'体幹機能の改善が歩行速度に反映されてきた。上肢随意性も向上中。'},
-    {id:'ev_s1c',date:'2024-10-15',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',
-     values:{'tug-r':12.6,'tug-l':13.8,'10c':15.4,'10m':11.8,'frt':16.8,'5sts':19.2,'fact':22,'fmaue':51,'fmale':26,'grip-r':22.8,'grip-l':12.4,'arm-r':27.6,'arm-l':26.2,'thigh-r':42.8,'thigh-l':41.0},
-     rawTrials:{},comment:'装具を外した状態で歩行可能になった。FMA-UEが大幅改善、日常生活での麻痺側使用も増加。'},
-  ]);
-
-  // 山田さん（2回分）
-  DB.saveEvs('pt_s2',[
-    {id:'ev_s2a',date:'2024-06-05',type:'初回評価',orthosis:'なし',aid:'四点杖',
-     values:{'tug-r':24.2,'tug-l':22.8,'10c':30.4,'10m':24.6,'frt':7.2,'5sts':34.8,'fact':11,'fmaue':28,'fmale':14,'grip-r':8.6,'grip-l':24.2,'arm-r':23.4,'arm-l':28.8,'thigh-r':37.2,'thigh-l':43.6},
-     rawTrials:{},comment:'歩行不安定、四点杖依存。体幹・下肢ともに著明な機能低下。'},
-    {id:'ev_s2b',date:'2024-09-10',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',
-     values:{'tug-r':19.4,'tug-l':18.6,'10c':24.2,'10m':19.8,'frt':11.4,'5sts':27.6,'fact':16,'fmaue':32,'fmale':18,'grip-r':10.2,'grip-l':24.8,'arm-r':24.0,'arm-l':29.0,'thigh-r':38.4,'thigh-l':43.8},
-     rawTrials:{},comment:'歩行補助具が四点杖からT字杖に変更可能となった。バランス能力の向上が顕著。'},
-  ]);
-
-  // 鈴木さん（2回分）
-  DB.saveEvs('pt_s3',[
-    {id:'ev_s3a',date:'2024-03-20',type:'初回評価',orthosis:'なし',aid:'なし',
-     values:{'tug-r':11.8,'tug-l':12.4,'10c':14.2,'10m':10.8,'frt':18.6,'5sts':16.4,'fact':20,'fmaue':42,'fmale':28,'grip-r':8.2,'grip-l':32.4,'wmft-fas':2.8,'wmft-t':38.4,'mal-aou':1.6,'mal-qom':1.4},
-     rawTrials:{},comment:'歩行は比較的自立しているが上肢機能に著明な制限。WMFTでは近位課題は可能だが遠位が困難。'},
-    {id:'ev_s3b',date:'2024-06-22',type:'3ヶ月定期評価',orthosis:'なし',aid:'なし',
-     values:{'tug-r':10.6,'tug-l':11.2,'10c':13.0,'10m':9.8,'frt':20.4,'5sts':14.8,'fact':23,'fmaue':50,'fmale':30,'grip-r':11.6,'grip-l':32.8,'wmft-fas':3.4,'wmft-t':28.6,'mal-aou':2.4,'mal-qom':2.2},
-     rawTrials:{},comment:'FMA-UE大幅改善。MALのAOU・QOMともに向上し日常生活での自発的使用が増えてきた。'},
-  ]);
-
-  toast('サンプルデータを3名分追加しました');
+  const sampleEvs={
+    'pt_s1':[
+      {id:'ev_s1a',date:'2024-04-10',type:'初回評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',values:{'tug-r':18.4,'tug-l':20.1,'10c':22.6,'10m':17.2,'frt':9.5,'5sts':28.4,'fact':14,'fmaue':38,'fmale':18,'grip-r':22.1,'grip-l':7.4,'arm-r':27.2,'arm-l':24.8,'thigh-r':42.1,'thigh-l':39.4},rawTrials:{},comment:'初回評価。体幹の代償が強く上肢・歩行ともに著明な制限あり。'},
+      {id:'ev_s1b',date:'2024-07-12',type:'3ヶ月定期評価',orthosis:'短下肢装具（既製品）',aid:'T字杖',values:{'tug-r':15.8,'tug-l':17.2,'10c':18.9,'10m':14.4,'frt':13.2,'5sts':23.6,'fact':18,'fmaue':44,'fmale':22,'grip-r':22.4,'grip-l':9.8,'arm-r':27.4,'arm-l':25.6,'thigh-r':42.5,'thigh-l':40.2},rawTrials:{},comment:'体幹機能の改善が歩行速度に反映されてきた。'},
+      {id:'ev_s1c',date:'2024-10-15',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',values:{'tug-r':12.6,'tug-l':13.8,'10c':15.4,'10m':11.8,'frt':16.8,'5sts':19.2,'fact':22,'fmaue':51,'fmale':26,'grip-r':22.8,'grip-l':12.4,'arm-r':27.6,'arm-l':26.2,'thigh-r':42.8,'thigh-l':41.0},rawTrials:{},comment:'装具なしで歩行可能。FMA-UE大幅改善。'},
+    ],
+    'pt_s2':[
+      {id:'ev_s2a',date:'2024-06-05',type:'初回評価',orthosis:'なし',aid:'四点杖',values:{'tug-r':24.2,'tug-l':22.8,'10c':30.4,'10m':24.6,'frt':7.2,'5sts':34.8,'fact':11,'fmaue':28,'fmale':14,'grip-r':8.6,'grip-l':24.2,'arm-r':23.4,'arm-l':28.8,'thigh-r':37.2,'thigh-l':43.6},rawTrials:{},comment:'歩行不安定、四点杖依存。'},
+      {id:'ev_s2b',date:'2024-09-10',type:'3ヶ月定期評価',orthosis:'なし',aid:'T字杖',values:{'tug-r':19.4,'tug-l':18.6,'10c':24.2,'10m':19.8,'frt':11.4,'5sts':27.6,'fact':16,'fmaue':32,'fmale':18,'grip-r':10.2,'grip-l':24.8,'arm-r':24.0,'arm-l':29.0,'thigh-r':38.4,'thigh-l':43.8},rawTrials:{},comment:'T字杖での歩行が可能に。バランス向上顕著。'},
+    ],
+    'pt_s3':[
+      {id:'ev_s3a',date:'2024-03-20',type:'初回評価',orthosis:'なし',aid:'なし',values:{'tug-r':11.8,'tug-l':12.4,'10c':14.2,'10m':10.8,'frt':18.6,'5sts':16.4,'fact':20,'fmaue':42,'fmale':28,'grip-r':8.2,'grip-l':32.4,'wmft-fas':2.8,'wmft-t':38.4,'mal-aou':1.6,'mal-qom':1.4},rawTrials:{},comment:'上肢機能に著明な制限。遠位課題が困難。'},
+      {id:'ev_s3b',date:'2024-06-22',type:'3ヶ月定期評価',orthosis:'なし',aid:'なし',values:{'tug-r':10.6,'tug-l':11.2,'10c':13.0,'10m':9.8,'frt':20.4,'5sts':14.8,'fact':23,'fmaue':50,'fmale':30,'grip-r':11.6,'grip-l':32.8,'wmft-fas':3.4,'wmft-t':28.6,'mal-aou':2.4,'mal-qom':2.2},rawTrials:{},comment:'FMA-UE大幅改善。日常生活での自発的使用が増加。'},
+    ],
+  };
+  toast('サンプルデータを登録中...');
+  for(const pt of samplePts) await DB.savePt(pt);
+  for(const [ptId,evs] of Object.entries(sampleEvs))
+    for(const ev of evs) await DB.saveEv(ptId,ev);
+  toast('サンプルデータ（3名）を登録しました');
   renderPtList();
 }
 
 // 初期化
 seedSampleData();
-renderPtList();
 </script>
 </body>
 </html>
