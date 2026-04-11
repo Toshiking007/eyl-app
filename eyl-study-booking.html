@@ -98,6 +98,22 @@ tr:hover td{background:var(--bg2)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap;z-index:9999}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* 削除確認モーダル */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300}
+.modal-box{background:var(--bg);border-radius:var(--radius-lg);padding:1.75rem;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-box h3{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.modal-box p{font-size:13px;color:var(--text2);margin-bottom:1rem}
+.person-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:1rem}
+.person-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.person-item:last-child{border-bottom:none}
+.person-item:hover{background:var(--bg2)}
+.person-item.selected-person{background:#fff0f0}
+.person-chk{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.person-item.selected-person .person-chk{background:#e24b4a;border-color:#e24b4a;color:#fff}
+.person-name{font-size:13px;font-weight:500;flex:1}
+.person-meta{font-size:11px;color:var(--text3)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end}
+
 /* パスワード画面 */
 .pw-overlay{position:fixed;inset:0;background:rgba(26,45,90,.97);display:flex;align-items:center;justify-content:center;z-index:200}
 .pw-box{background:var(--bg);border-radius:var(--radius-lg);padding:2rem;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -203,6 +219,7 @@ tr:hover td{background:var(--bg2)}
       <div class="admin-actions">
         <button class="btn-outline" onclick="loadData(true)">🔄 最新データを取得</button>
         <button class="btn-outline" onclick="exportCSV()">📥 CSV エクスポート</button>
+        <button class="btn-outline" onclick="openDelModal()" style="border-color:#f09595;color:#a32d2d">🗑 申込者を削除</button>
         <button class="btn-sm btn-danger" onclick="logout()">ログアウト</button>
       </div>
     </div>
@@ -227,6 +244,20 @@ tr:hover td{background:var(--bg2)}
 
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- 削除モーダル -->
+<div class="modal-overlay" id="del-modal" style="display:none" onclick="if(event.target===this)closeDelModal()">
+  <div class="modal-box">
+    <h3>申込者を削除</h3>
+    <p>削除したい方を選択してください。選択した方の申込データがすべて削除されます。</p>
+    <div class="person-list" id="person-list"></div>
+    <div id="del-count" style="font-size:12px;color:#a32d2d;margin-bottom:12px;display:none"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeDelModal()">キャンセル</button>
+      <button class="btn-primary" id="del-confirm-btn" style="width:auto;margin-top:0;padding:8px 20px;background:#e24b4a" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Firebase設定（直接埋め込み） ──
@@ -499,7 +530,7 @@ function renderTable(){
         ${r.status==='confirmed'?`<button class="btn-sm btn-danger" onclick="changeStatus('${r.id}','cancelled')">取消</button>`:''}
         ${r.status==='waiting'?`<button class="btn-sm btn-ok" onclick="changeStatus('${r.id}','confirmed')">確定</button>`:''}
         ${r.status==='cancelled'?`<button class="btn-sm" onclick="changeStatus('${r.id}','confirmed')">復活</button>`:''}
-      </td>
+        <button class="btn-sm btn-danger" onclick="deleteOne('${r.id}','${r.name}')">削除</button>      </td>
     </tr>`;
   }).join('');
 }
@@ -513,6 +544,100 @@ async function changeStatus(id,newStatus){
     catch(e){toast('更新エラー: '+e.message,3000);}
   }
   renderStats();renderTable();renderSessions();
+}
+
+// ── 削除機能 ──
+let selectedPersons=new Set();
+
+function openDelModal(){
+  selectedPersons=new Set();
+  // 名前でユニークな人物リストを作成
+  const people=[];
+  const seen=new Set();
+  registrations.forEach(r=>{
+    const key=r.email||r.name;
+    if(!seen.has(key)){
+      seen.add(key);
+      const count=registrations.filter(x=>(x.email||x.name)===key).length;
+      people.push({key,name:r.name,kana:r.kana,org:r.org,count});
+    }
+  });
+  if(!people.length){toast('申込データがありません');return;}
+  const list=document.getElementById('person-list');
+  list.innerHTML=people.map(p=>`
+    <div class="person-item" id="pi-${CSS.escape(p.key)}" onclick="togglePerson('${p.key.replace(/'/g,"\\'")}')">
+      <div class="person-chk" id="pc-${CSS.escape(p.key)}"></div>
+      <div style="flex:1">
+        <div class="person-name">${p.name} <span style="font-size:11px;color:var(--text3)">${p.kana}</span></div>
+        <div class="person-meta">${p.org} ／ ${p.count}件の申込</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('del-count').style.display='none';
+  document.getElementById('del-modal').style.display='flex';
+}
+
+function togglePerson(key){
+  if(selectedPersons.has(key))selectedPersons.delete(key);
+  else selectedPersons.add(key);
+  // UI更新
+  document.querySelectorAll('.person-item').forEach(el=>{
+    el.classList.remove('selected-person');
+    el.querySelector('.person-chk').textContent='';
+  });
+  selectedPersons.forEach(k=>{
+    const escaped=CSS.escape(k);
+    const el=document.getElementById('pi-'+escaped);
+    if(el){
+      el.classList.add('selected-person');
+      el.querySelector('.person-chk').textContent='✓';
+    }
+  });
+  const cnt=document.getElementById('del-count');
+  if(selectedPersons.size>0){
+    const totalRecords=registrations.filter(r=>selectedPersons.has(r.email||r.name)).length;
+    cnt.textContent=`${selectedPersons.size}名・${totalRecords}件のデータを削除します`;
+    cnt.style.display='block';
+  }else{
+    cnt.style.display='none';
+  }
+}
+
+function closeDelModal(){
+  document.getElementById('del-modal').style.display='none';
+  selectedPersons=new Set();
+}
+
+async function confirmDelete(){
+  if(!selectedPersons.size){toast('削除する方を選択してください');return;}
+  const toDelete=registrations.filter(r=>selectedPersons.has(r.email||r.name));
+  const btn=document.getElementById('del-confirm-btn');
+  btn.disabled=true;btn.textContent='削除中...';
+  try{
+    if(db){
+      const batch=db.batch();
+      toDelete.forEach(r=>batch.delete(db.collection(COL).doc(r.id)));
+      await batch.commit();
+    }
+    const deleteIds=new Set(toDelete.map(r=>r.id));
+    registrations=registrations.filter(r=>!deleteIds.has(r.id));
+    toast(`${toDelete.length}件のデータを削除しました`);
+    closeDelModal();
+    renderSessions();renderStats();renderTable();updateDateFilter();
+  }catch(e){
+    toast('削除エラー: '+e.message,4000);
+  }finally{
+    btn.disabled=false;btn.textContent='削除する';
+  }
+}
+
+async function deleteOne(id,name){
+  if(!confirm(`「${name}」さんのこの申込を削除しますか？`))return;
+  try{
+    if(db)await db.collection(COL).doc(id).delete();
+    registrations=registrations.filter(r=>r.id!==id);
+    toast('削除しました');
+    renderSessions();renderStats();renderTable();updateDateFilter();
+  }catch(e){toast('削除エラー: '+e.message,4000);}
 }
 
 function exportCSV(){
