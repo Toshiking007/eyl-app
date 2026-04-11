@@ -1,1 +1,862 @@
-pbpaste > ~/Desktop/eyl-study-booking.html && echo "完了"
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>脳卒中の歩行と手の勉強会 | EYL Study Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --navy: #1a2d5a;
+  --navy-light: #243d7a;
+  --teal: #1db88a;
+  --teal-light: #e1f5ee;
+  --teal-mid: #9fe1cb;
+  --blue-light: #e6f1fb;
+  --amber: #faeeda;
+  --red-light: #fcebeb;
+  --green-light: #eaf3de;
+  --text: #1a1a2e;
+  --text2: #5a6070;
+  --text3: #9098a9;
+  --bg: #ffffff;
+  --bg2: #f7f8fa;
+  --bg3: #f0f2f5;
+  --border: rgba(0,0,0,.08);
+  --border2: rgba(0,0,0,.14);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg2);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--navy);
+  color: #fff;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-logo {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .04em;
+  color: #fff;
+}
+.topbar-logo span { color: var(--teal); }
+.topbar-tabs { display: flex; gap: 2px; }
+.topbar-tab {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all .15s;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.topbar-tab.active { background: rgba(255,255,255,.12); color: #fff; }
+.topbar-tab:hover:not(.active) { color: rgba(255,255,255,.85); }
+.fb-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #e24b4a; display: inline-block;
+  margin-right: 6px; vertical-align: middle;
+  transition: background .3s;
+}
+.fb-dot.connected { background: #1db88a; }
+
+/* ── Layout ── */
+.container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+
+/* ── Form header ── */
+.form-hero {
+  background: var(--navy);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.form-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: rgba(29,184,138,.12);
+  border-radius: 50%;
+}
+.form-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; right: 60px;
+  width: 140px; height: 140px;
+  background: rgba(29,184,138,.07);
+  border-radius: 50%;
+}
+.form-hero h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  position: relative;
+}
+.form-hero p { font-size: 13px; opacity: .8; position: relative; }
+.badges { display: flex; gap: 6px; margin-bottom: 10px; }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 4px; letter-spacing: .02em;
+}
+.badge-gait { background: var(--teal-mid); color: #085041; }
+.badge-hand { background: #b5d4f4; color: #0c447c; }
+.badge-waiting { background: var(--amber); color: #854f0b; }
+.badge-confirmed { background: var(--green-light); color: #3b6d11; }
+.badge-cancelled { background: var(--red-light); color: #a32d2d; }
+
+/* ── Form fields ── */
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  color: var(--text3); text-transform: uppercase;
+  margin-bottom: 12px; margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-field { margin-bottom: 0; }
+.form-field label {
+  display: block; font-size: 12px; font-weight: 500;
+  color: var(--text2); margin-bottom: 5px;
+}
+.form-field label span { color: #e24b4a; }
+input[type=text], input[type=email], select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border2); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  font-size: 14px; font-family: 'Noto Sans JP', sans-serif;
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus {
+  outline: none; border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(29,184,138,.12);
+}
+
+/* ── Session list ── */
+.sessions-list { display: grid; gap: 6px; }
+.session-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: all .12s; background: var(--bg);
+  user-select: none;
+}
+.session-row:hover:not(.full) { border-color: var(--teal-mid); background: #f7fdfa; }
+.session-row.selected { border-color: var(--teal); background: var(--teal-light); }
+.session-row.full { opacity: .5; cursor: not-allowed; background: var(--bg3); }
+.session-chk {
+  width: 17px; height: 17px; border-radius: 4px; flex-shrink: 0;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: all .12s;
+}
+.session-row.selected .session-chk {
+  background: var(--teal); border-color: var(--teal); color: #fff;
+}
+.session-date { font-size: 13px; font-weight: 700; color: var(--navy); min-width: 52px; }
+.session-theme { font-size: 13px; color: var(--text2); flex: 1; }
+.session-seats { font-size: 11px; font-weight: 500; color: var(--text3); white-space: nowrap; }
+.session-seats.full-seats { color: #a32d2d; }
+
+/* ── Buttons ── */
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--navy); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; margin-top: 1rem;
+  transition: opacity .15s, transform .1s;
+  letter-spacing: .03em;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-primary:active { transform: scale(.99); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn-sm {
+  padding: 5px 11px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border2); background: var(--bg);
+  color: var(--text); border-radius: 6px; cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif; transition: background .1s;
+}
+.btn-sm:hover { background: var(--bg2); }
+.btn-danger { border-color: #f09595; color: #a32d2d; }
+.btn-danger:hover { background: var(--red-light); }
+.btn-ok { border-color: var(--teal-mid); color: #0f6e56; }
+.btn-ok:hover { background: var(--teal-light); }
+.btn-outline {
+  padding: 7px 14px; border: 1px solid var(--border2);
+  background: var(--bg); color: var(--text); border-radius: 7px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  font-family: 'Noto Sans JP', sans-serif; transition: background .1s;
+}
+.btn-outline:hover { background: var(--bg2); }
+
+/* ── Notice ── */
+.notice {
+  background: var(--blue-light); border: 1px solid #b5d4f4;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: #185fa5; margin-bottom: 1.25rem;
+}
+.error-msg { color: #a32d2d; font-size: 13px; margin-top: 6px; display: none; }
+
+/* ── Success ── */
+.success-card {
+  background: var(--green-light); border: 1px solid #c0dd97;
+  border-radius: var(--radius-lg); padding: 2.5rem 1.5rem;
+  text-align: center; display: none;
+}
+.success-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--teal); color: #fff;
+  font-size: 24px; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1rem;
+}
+.success-card h2 { font-size: 18px; font-weight: 700; color: #27500a; margin-bottom: 6px; }
+.success-card p { font-size: 13px; color: #3b6d11; margin-bottom: 1.25rem; }
+
+/* ── Admin ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1.25rem; }
+.stat-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.stat-num { font-size: 24px; font-weight: 700; color: var(--navy); }
+.stat-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+.filter-bar select { width: auto; font-size: 13px; padding: 7px 10px; }
+.filter-bar input { width: 180px; font-size: 13px; padding: 7px 10px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left; padding: 9px 10px;
+  border-bottom: 1px solid var(--border2);
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+}
+td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  color: var(--text); vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+.empty-state, .loading-state {
+  text-align: center; padding: 2.5rem;
+  color: var(--text3); font-size: 13px;
+}
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid var(--border2); border-top-color: var(--navy);
+  border-radius: 50%; animation: spin .6s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Firebase setup panel ── */
+.fb-panel {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem; box-shadow: var(--shadow);
+}
+.fb-panel-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+}
+.fb-panel-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.fb-panel-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.fb-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500; padding: 4px 10px;
+  border-radius: 5px;
+}
+.fb-status.ok { background: var(--green-light); color: #3b6d11; }
+.fb-status.ng { background: var(--red-light); color: #a32d2d; }
+.fb-status.loading { background: var(--amber); color: #854f0b; }
+.cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.cfg-grid .form-field label { font-size: 11px; font-family: 'DM Sans', monospace; }
+.cfg-grid input { font-size: 12px; padding: 7px 10px; font-family: 'DM Sans', sans-serif; }
+.fb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-note { font-size: 11px; color: var(--text3); margin-top: 10px; line-height: 1.5; }
+.fb-note code {
+  font-family: 'DM Sans', monospace; background: var(--bg2);
+  padding: 1px 5px; border-radius: 3px; font-size: 11px;
+}
+
+/* ── Admin top ── */
+.admin-toprow {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px;
+}
+.admin-title { font-size: 18px; font-weight: 700; color: var(--navy); }
+.admin-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--navy); color: #fff;
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+  white-space: nowrap; z-index: 9999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .form-grid, .cfg-grid, .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .topbar-logo { font-size: 13px; }
+  .topbar-tab { padding: 6px 10px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">EYL <span>Study Group</span></div>
+  <div class="topbar-tabs">
+    <button class="topbar-tab active" onclick="showTab('form')">申込フォーム</button>
+    <button class="topbar-tab" onclick="showTab('admin')">管理システム</button>
+  </div>
+  <div style="font-size:12px;color:rgba(255,255,255,.6)">
+    <span class="fb-dot" id="top-dot"></span><span id="top-status">未接続</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Firebase 設定パネル -->
+  <div class="fb-panel" id="fb-panel">
+    <div class="fb-panel-header">
+      <div>
+        <div class="fb-panel-title">Firebase 設定</div>
+        <div class="fb-panel-sub">firebaseConfig の値を入力して接続してください</div>
+      </div>
+      <span class="fb-status ng" id="fb-badge">● 未接続</span>
+    </div>
+    <div class="cfg-grid">
+      <div class="form-field"><label>apiKey</label><input id="cfg-apiKey" placeholder="AIzaSy..."></div>
+      <div class="form-field"><label>authDomain</label><input id="cfg-authDomain" placeholder="xxx.firebaseapp.com"></div>
+      <div class="form-field"><label>projectId</label><input id="cfg-projectId" placeholder="eyl-assessment"></div>
+      <div class="form-field"><label>storageBucket</label><input id="cfg-storageBucket" placeholder="xxx.firebasestorage.app"></div>
+      <div class="form-field"><label>messagingSenderId</label><input id="cfg-messagingSenderId" placeholder="301518944244"></div>
+      <div class="form-field"><label>appId</label><input id="cfg-appId" placeholder="1:xxx:web:xxx"></div>
+    </div>
+    <div class="fb-actions">
+      <button class="btn-outline" onclick="connectFirebase()">接続する</button>
+      <button class="btn-sm" onclick="loadSaved()">保存済み設定を読み込む</button>
+      <button class="btn-sm" onclick="togglePanel()">▲ 折りたたむ</button>
+    </div>
+    <div class="fb-note">
+      設定は localStorage に保存されます。Firestore ルール（開発用）: <code>allow read, write: if true;</code><br>
+      コレクション名: <code>studygroup_registrations</code>（既存の患者データとは完全に分離）
+    </div>
+  </div>
+
+  <!-- 申込フォーム -->
+  <div id="pane-form" class="pane active">
+    <div id="form-body">
+      <div class="form-hero">
+        <div class="badges">
+          <span class="badge badge-gait">GAIT 第1月曜</span>
+          <span class="badge badge-hand">HAND 第3月曜</span>
+        </div>
+        <h1>脳卒中の歩行と手の勉強会</h1>
+        <p>EYL Study Group ｜ 18:30〜20:30 ｜ 参加費 ¥500（資料代）｜ 定員10名・少人数制</p>
+      </div>
+
+      <div class="notice">ご希望の日程を複数選択できます。満席の場合はキャンセル待ちになります。参加追加・キャンセルは公式LINEからいつでも可能です。</div>
+
+      <div class="card">
+        <div class="section-label">お申込者情報</div>
+        <div class="form-grid">
+          <div class="form-field"><label>氏名（漢字）<span> *</span></label><input type="text" id="f-name" placeholder="水上 俊樹"></div>
+          <div class="form-field"><label>氏名（ふりがな）<span> *</span></label><input type="text" id="f-kana" placeholder="みなかみ としき"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-field"><label>所属（病院・施設名）<span> *</span></label><input type="text" id="f-org" placeholder="○○病院"></div>
+          <div class="form-field"><label>職種<span> *</span></label>
+            <select id="f-job">
+              <option value="">選択してください</option>
+              <option>理学療法士（PT）</option>
+              <option>作業療法士（OT）</option>
+              <option>言語聴覚士（ST）</option>
+              <option>その他セラピスト</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-field"><label>メールアドレス<span> *</span></label><input type="email" id="f-email" placeholder="example@mail.com"></div>
+          <div class="form-field"><label>経験年数<span> *</span></label>
+            <select id="f-exp">
+              <option value="">選択してください</option>
+              <option>1年未満</option><option>1〜3年</option><option>4〜6年</option>
+              <option>7〜10年</option><option>11〜15年</option><option>16年以上</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label"><span class="badge badge-gait">GAIT</span> 歩行分析研修（第1月曜）</div>
+        <div class="sessions-list" id="gait-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label"><span class="badge badge-hand">HAND</span> 上肢・手の研修（第3月曜）</div>
+        <div class="sessions-list" id="hand-list"></div>
+      </div>
+
+      <div class="error-msg" id="form-error"></div>
+      <button class="btn-primary" id="submit-btn" onclick="submitForm()">申込を送信する</button>
+    </div>
+
+    <div class="success-card" id="success-card">
+      <div class="success-icon">✓</div>
+      <h2>お申込みありがとうございます！</h2>
+      <p id="success-msg"></p>
+      <button class="btn-outline" onclick="resetForm()">別の日程を申し込む</button>
+    </div>
+  </div>
+
+  <!-- 管理システム -->
+  <div id="pane-admin" class="pane">
+    <div class="admin-toprow">
+      <div class="admin-title">管理システム</div>
+      <div class="admin-actions">
+        <button class="btn-outline" onclick="loadData(true)">🔄 最新データを取得</button>
+        <button class="btn-outline" onclick="exportCSV()">📥 CSV エクスポート</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="card" style="padding:1.25rem">
+      <div class="filter-bar">
+        <select id="f-type" onchange="renderTable()"><option value="">すべての種類</option><option value="GAIT">GAIT</option><option value="HAND">HAND</option></select>
+        <select id="f-date" onchange="renderTable()"><option value="">すべての日程</option></select>
+        <select id="f-stat" onchange="renderTable()">
+          <option value="">すべての状態</option>
+          <option value="confirmed">参加確定</option>
+          <option value="waiting">キャンセル待ち</option>
+          <option value="cancelled">キャンセル</option>
+        </select>
+        <input type="text" id="f-search" placeholder="氏名・所属で検索..." oninput="renderTable()">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>氏名</th><th>ふりがな</th><th>所属</th><th>職種</th><th>経験</th>
+              <th>種別</th><th>日程</th><th>テーマ</th><th>状態</th><th>申込日時</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+        <div id="tbl-empty" class="empty-state" style="display:none">申込データがありません。</div>
+        <div id="tbl-loading" class="loading-state" style="display:none"><span class="spinner"></span>読み込み中...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── データ定義 ──
+const GAIT = [
+  {date:"5/11", theme:"体幹が崩れると歩行が崩れる"},
+  {date:"6/1",  theme:"立脚中期になぜ体が傾くのか"},
+  {date:"7/6",  theme:"反張膝はなぜ起きる？"},
+  {date:"8/10", theme:"膝折れの原因を追求"},
+  {date:"9/7",  theme:"踵から着けない足に何が足りないか"},
+  {date:"10/5", theme:"推進力を取り戻すアプローチ"},
+  {date:"11/2", theme:"分回し歩行を紐解く"},
+  {date:"12/7", theme:"骨盤が挙上する原因とその解決策"},
+  {date:"1/4",  theme:"「つま先が上がらない」を解決する"},
+  {date:"2/1",  theme:"上肢の連合反応、その謎を解く"},
+  {date:"3/1",  theme:"なぜ下を向いて歩くのか"}
+];
+const HAND = [
+  {date:"4/20", theme:"肩甲骨が安定すると上肢が変わる"},
+  {date:"5/18", theme:"肩関節外旋の重要性"},
+  {date:"6/15", theme:"肘関節屈曲・伸展の促通"},
+  {date:"7/27", theme:"手首を背屈させるために何が必要か"},
+  {date:"8/17", theme:"手指に動きを引き出す"},
+  {date:"9/28", theme:"代償が強い症例とどう向き合うか"},
+  {date:"10/19",theme:"上肢の支持機能"},
+  {date:"11/16",theme:"麻痺手に随意性を引き出すアプローチ"},
+  {date:"12/21",theme:"屈曲の強い手をどう開くか"},
+  {date:"1/18", theme:"肩関節亜脱臼の評価・予防・治療的アプローチ"},
+  {date:"2/15", theme:"肩の痛みが治療の壁になっていませんか"},
+  {date:"3/15", theme:"感覚が乏しい手へのアプローチ"}
+];
+const CAPACITY = 10;
+const COL = 'studygroup_registrations';
+
+let db = null;
+let registrations = [];
+let sel = { gait: [], hand: [] };
+let panelOpen = true;
+
+// ── Toast ──
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── Firebase ──
+function loadSaved() {
+  try {
+    const s = localStorage.getItem('eyl_fb_cfg');
+    if (!s) { toast('保存済み設定が見つかりません'); return; }
+    const c = JSON.parse(s);
+    ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId']
+      .forEach(k => { const el = document.getElementById('cfg-'+k); if (el && c[k]) el.value = c[k]; });
+    toast('設定を読み込みました');
+  } catch(e) { toast('読み込みエラー'); }
+}
+
+function connectFirebase() {
+  const cfg = {};
+  ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId']
+    .forEach(k => cfg[k] = (document.getElementById('cfg-'+k).value||'').trim());
+  if (!cfg.apiKey || !cfg.projectId) { toast('apiKey と projectId は必須です'); return; }
+
+  setStatus('loading', '接続中...');
+  try {
+    // 既存アプリがあれば削除してから初期化
+    if (firebase.apps.length) {
+      firebase.apps[0].delete().then(init).catch(init);
+    } else { init(); }
+  } catch(e) { init(); }
+
+  function init() {
+    try {
+      firebase.initializeApp(cfg);
+      db = firebase.firestore();
+      // 接続テスト
+      db.collection(COL).limit(1).get()
+        .then(() => {
+          setStatus('ok', '接続済み');
+          localStorage.setItem('eyl_fb_cfg', JSON.stringify(cfg));
+          toast('Firebase に接続しました！');
+          loadData(false);
+        })
+        .catch(err => {
+          setStatus('ng', '接続失敗');
+          toast('エラー: ' + err.message, 4000);
+          db = null;
+        });
+    } catch(e) {
+      setStatus('ng', '接続失敗');
+      toast('設定エラー: ' + e.message, 4000);
+      db = null;
+    }
+  }
+}
+
+function setStatus(type, label) {
+  const badge = document.getElementById('fb-badge');
+  badge.className = 'fb-status ' + type;
+  badge.textContent = '● ' + label;
+  const dot = document.getElementById('top-dot');
+  dot.className = 'fb-dot' + (type==='ok' ? ' connected' : '');
+  document.getElementById('top-status').textContent = label;
+}
+
+function togglePanel() {
+  panelOpen = !panelOpen;
+  const rows = document.querySelector('.cfg-grid');
+  const note = document.querySelector('.fb-note');
+  const sub  = document.querySelector('.fb-panel-sub');
+  const btns = document.querySelector('.fb-actions');
+  [rows, note, sub, btns].forEach(el => { if(el) el.style.display = panelOpen ? '' : 'none'; });
+  document.querySelector('.fb-actions .btn-sm:last-child').textContent = panelOpen ? '▲ 折りたたむ' : '▼ 設定を開く';
+}
+
+// ── データ読み込み ──
+async function loadData(showToast=true) {
+  if (!db) { if(showToast) toast('先に Firebase に接続してください'); return; }
+  document.getElementById('tbl-loading').style.display = 'block';
+  document.getElementById('tbl-empty').style.display = 'none';
+  try {
+    const snap = await db.collection(COL).orderBy('createdTs','desc').get();
+    registrations = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    renderSessions();
+    renderStats();
+    renderTable();
+    updateDateFilter();
+    if(showToast) toast('データを取得しました（' + registrations.length + '件）');
+  } catch(e) {
+    toast('取得エラー: ' + e.message, 4000);
+  } finally {
+    document.getElementById('tbl-loading').style.display = 'none';
+  }
+}
+
+// ── セッション描画 ──
+function getCount(type, date) {
+  return registrations.filter(r => r.type===type && r.date===date && r.status!=='cancelled').length;
+}
+
+function renderSessions() {
+  ['gait','hand'].forEach(t => {
+    const arr = t==='gait' ? GAIT : HAND;
+    const el  = document.getElementById(t+'-list');
+    el.innerHTML = arr.map((s, i) => {
+      const cnt    = getCount(t.toUpperCase(), s.date);
+      const isFull = cnt >= CAPACITY;
+      const isSel  = sel[t].includes(i);
+      return `<div class="session-row${isSel?' selected':''}${isFull&&!isSel?' full':''}"
+        onclick="toggleSel('${t}',${i},${isFull})">
+        <div class="session-chk">${isSel?'✓':''}</div>
+        <span class="session-date">${s.date}</span>
+        <span class="session-theme">${s.theme}</span>
+        <span class="session-seats${isFull?' full-seats':''}">${isFull?'満席':cnt+'/'+CAPACITY+'名'}</span>
+      </div>`;
+    }).join('');
+  });
+}
+
+function toggleSel(t, idx, isFull) {
+  const arr = sel[t];
+  const pos = arr.indexOf(idx);
+  if (pos >= 0) arr.splice(pos, 1);
+  else if (!isFull) arr.push(idx);
+  renderSessions();
+}
+
+// ── フォーム送信 ──
+async function submitForm() {
+  const name  = document.getElementById('f-name').value.trim();
+  const kana  = document.getElementById('f-kana').value.trim();
+  const org   = document.getElementById('f-org').value.trim();
+  const job   = document.getElementById('f-job').value;
+  const email = document.getElementById('f-email').value.trim();
+  const exp   = document.getElementById('f-exp').value;
+  const err   = document.getElementById('form-error');
+
+  if (!name||!kana||!org||!job||!email||!exp) {
+    err.textContent='必須項目をすべて入力してください。'; err.style.display='block'; return;
+  }
+  if (sel.gait.length===0 && sel.hand.length===0) {
+    err.textContent='参加したい日程を1つ以上選択してください。'; err.style.display='block'; return;
+  }
+  err.style.display = 'none';
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;border-color:rgba(255,255,255,.3)"></span> 送信中...';
+
+  const now = new Date();
+  const createdAt = now.toLocaleString('ja-JP');
+  const createdTs = now.getTime();
+
+  const records = [];
+  sel.gait.forEach(i => {
+    const s = GAIT[i]; const cnt = getCount('GAIT', s.date);
+    records.push({name,kana,org,job,email,exp,type:'GAIT',date:s.date,theme:s.theme,
+      status:cnt>=CAPACITY?'waiting':'confirmed',createdAt,createdTs});
+  });
+  sel.hand.forEach(i => {
+    const s = HAND[i]; const cnt = getCount('HAND', s.date);
+    records.push({name,kana,org,job,email,exp,type:'HAND',date:s.date,theme:s.theme,
+      status:cnt>=CAPACITY?'waiting':'confirmed',createdAt,createdTs});
+  });
+
+  try {
+    if (db) {
+      const batch = db.batch();
+      records.forEach(r => {
+        const ref = db.collection(COL).doc();
+        batch.set(ref, r);
+        registrations.push({id: ref.id, ...r});
+      });
+      await batch.commit();
+      toast('Firestore に保存しました！');
+    } else {
+      records.forEach(r => registrations.push({id: Date.now()+Math.random(), ...r}));
+      toast('（オフライン）ローカルに保存しました');
+    }
+
+    const hasWaiting = records.some(r => r.status==='waiting');
+    document.getElementById('success-msg').textContent =
+      `${name} 様、${records.length}件のお申込みを受け付けました。` +
+      (hasWaiting ? '一部の日程は満席のためキャンセル待ちとなっています。' : '参加確定です。') +
+      'ご登録のメールアドレスにご連絡します。';
+    document.getElementById('form-body').style.display = 'none';
+    document.getElementById('success-card').style.display = 'block';
+    sel = {gait:[], hand:[]};
+    renderSessions();
+
+  } catch(e) {
+    toast('送信エラー: ' + e.message, 4000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '申込を送信する';
+  }
+}
+
+function resetForm() {
+  ['f-name','f-kana','f-org','f-email'].forEach(id => document.getElementById(id).value='');
+  ['f-job','f-exp'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('form-body').style.display = 'block';
+  document.getElementById('success-card').style.display = 'none';
+}
+
+// ── 管理画面 ──
+function renderStats() {
+  const total     = registrations.length;
+  const confirmed = registrations.filter(r=>r.status==='confirmed').length;
+  const waiting   = registrations.filter(r=>r.status==='waiting').length;
+  const people    = [...new Set(registrations.map(r=>r.email))].length;
+  document.getElementById('stats-grid').innerHTML = [
+    [total,'総申込数'], [confirmed,'参加確定'],
+    [waiting,'キャンセル待ち'], [people,'参加者数（人）']
+  ].map(([n,l]) =>
+    `<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-lbl">${l}</div></div>`
+  ).join('');
+}
+
+function updateDateFilter() {
+  const sel2 = document.getElementById('f-date');
+  const cur  = sel2.value;
+  const dates = [...new Set(registrations.map(r=>r.type+' '+r.date))].sort();
+  sel2.innerHTML = '<option value="">すべての日程</option>' +
+    dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+  if (cur) sel2.value = cur;
+}
+
+function renderTable() {
+  const fType   = document.getElementById('f-type').value;
+  const fDate   = document.getElementById('f-date').value;
+  const fStat   = document.getElementById('f-stat').value;
+  const fSearch = document.getElementById('f-search').value.toLowerCase();
+  const loading = document.getElementById('tbl-loading');
+  if (loading.style.display !== 'none') return;
+
+  const rows = registrations.filter(r => {
+    if (fType && r.type !== fType) return false;
+    if (fDate && (r.type+' '+r.date) !== fDate) return false;
+    if (fStat && r.status !== fStat) return false;
+    if (fSearch && !r.name.includes(fSearch) && !r.kana.includes(fSearch) &&
+        !(r.org||'').toLowerCase().includes(fSearch)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('tbl-body');
+  const empty = document.getElementById('tbl-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(r => {
+    const bc = r.type==='GAIT' ? 'badge-gait' : 'badge-hand';
+    const sc = r.status==='confirmed' ? 'confirmed' : r.status==='waiting' ? 'waiting' : 'cancelled';
+    const sl = r.status==='confirmed' ? '参加確定' : r.status==='waiting' ? 'キャンセル待ち' : 'キャンセル';
+    const jobShort = (r.job||'').replace('（PT）','').replace('（OT）','').replace('（ST）','');
+    return `<tr>
+      <td style="font-weight:700">${r.name||''}</td>
+      <td style="color:var(--text3)">${r.kana||''}</td>
+      <td>${r.org||''}</td>
+      <td>${jobShort}</td>
+      <td>${r.exp||''}</td>
+      <td><span class="badge badge-${r.type.toLowerCase()}">${r.type}</span></td>
+      <td style="white-space:nowrap;font-weight:500">${r.date}</td>
+      <td style="font-size:12px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.theme}">${r.theme}</td>
+      <td><span class="badge badge-${sc}">${sl}</span></td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap">${r.createdAt||''}</td>
+      <td style="white-space:nowrap">
+        ${r.status==='confirmed'?`<button class="btn-sm btn-danger" onclick="changeStatus('${r.id}','cancelled')">取消</button>`:''}
+        ${r.status==='waiting' ?`<button class="btn-sm btn-ok"     onclick="changeStatus('${r.id}','confirmed')">確定</button>`:''}
+        ${r.status==='cancelled'?`<button class="btn-sm"           onclick="changeStatus('${r.id}','confirmed')">復活</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function changeStatus(id, newStatus) {
+  const r = registrations.find(r => String(r.id)===String(id));
+  if (!r) return;
+  r.status = newStatus;
+  if (db) {
+    try {
+      await db.collection(COL).doc(id).update({status: newStatus});
+      toast('状態を更新しました');
+    } catch(e) { toast('更新エラー: '+e.message, 3000); }
+  }
+  renderStats();
+  renderTable();
+  renderSessions();
+}
+
+function exportCSV() {
+  if (!registrations.length) { toast('データがありません'); return; }
+  const header = ['氏名','ふりがな','所属','職種','経験年数','メール','種別','日程','テーマ','状態','申込日時'];
+  const rows   = registrations.map(r=>[r.name,r.kana,r.org,r.job,r.exp,r.email,r.type,r.date,r.theme,r.status,r.createdAt]);
+  const csv    = '\uFEFF' + [header,...rows].map(r=>r.map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'EYL勉強会_申込名簿_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'') + '.csv';
+  a.click();
+  toast('CSV をダウンロードしました');
+}
+
+// ── タブ切替 ──
+function showTab(t) {
+  document.querySelectorAll('.topbar-tab').forEach((b,i) => b.classList.toggle('active', ['form','admin'][i]===t));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-'+t).classList.add('active');
+  if (t==='admin') { renderStats(); renderTable(); updateDateFilter(); }
+}
+
+// ── 初期化 ──
+loadSaved();
+renderSessions();
+renderStats();
+</script>
+</body>
+</html>
