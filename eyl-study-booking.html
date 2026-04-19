@@ -401,7 +401,7 @@ function renderSessions(){
         <div class="session-chk">${isSel?'✓':''}</div>
         <span class="session-date">${s.date}</span>
         <span class="session-theme">${s.theme}</span>
-        <span class="session-seats${isFull?' full-seats':''}"></span>
+        <span class="session-seats${isFull?' full-seats':''}">${isFull?'満席':cnt+'/'+CAPACITY+'名'}</span>
       </div>`;
     }).join('');
   });
